@@ -61,10 +61,12 @@ public sealed class HttpDownloadEngine : IDownloadEngine
             : contentLength;
 
         var fileMode = resumeOffset > 0 ? FileMode.Append : FileMode.Create;
-        await using var fileStream = new FileStream(item.PartFilePath, fileMode, FileAccess.Write, FileShare.Read, BufferSize, useAsync: true);
-        await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        {
+            await using var fileStream = new FileStream(item.PartFilePath, fileMode, FileAccess.Write, FileShare.Read, BufferSize, useAsync: true);
+            await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
 
-        await CopyWithProgressAsync(responseStream, fileStream, item, resumeOffset, progress, cancellationToken).ConfigureAwait(false);
+            await CopyWithProgressAsync(responseStream, fileStream, item, resumeOffset, progress, cancellationToken).ConfigureAwait(false);
+        }
 
         Finalize(item);
     }
@@ -79,10 +81,12 @@ public sealed class HttpDownloadEngine : IDownloadEngine
 
         item.TotalBytes = response.Content.Headers.ContentLength;
 
-        await using var fileStream = new FileStream(item.PartFilePath, FileMode.Create, FileAccess.Write, FileShare.Read, BufferSize, useAsync: true);
-        await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        {
+            await using var fileStream = new FileStream(item.PartFilePath, FileMode.Create, FileAccess.Write, FileShare.Read, BufferSize, useAsync: true);
+            await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
 
-        await CopyWithProgressAsync(responseStream, fileStream, item, 0, progress, cancellationToken).ConfigureAwait(false);
+            await CopyWithProgressAsync(responseStream, fileStream, item, 0, progress, cancellationToken).ConfigureAwait(false);
+        }
 
         Finalize(item);
     }
