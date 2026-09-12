@@ -7,7 +7,7 @@
         xmlns:vm="clr-namespace:DownloadManagerApplet.ViewModels"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
-        Title="Download Manager Applet" Height="720" Width="960" MinHeight="560" MinWidth="720"
+        Title="AtraTech Download Solutions" Height="720" Width="960" MinHeight="560" MinWidth="720"
         Background="{StaticResource BackgroundBrush}"
         FontFamily="Segoe UI" FontSize="13">
 
@@ -71,7 +71,7 @@
         <!-- Title bar -->
         <Border DockPanel.Dock="Top" Background="{StaticResource PanelAltBrush}"
                 BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,8">
-            <TextBlock Text="Download Manager Applet" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
+            <TextBlock Text="AtraTech Download Solutions" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
         </Border>
 
         <!-- Toolbar -->

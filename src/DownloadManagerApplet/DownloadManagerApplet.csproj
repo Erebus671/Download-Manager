@@ -8,6 +8,14 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Product>AtraTech Download Solutions</Product>
+    <AssemblyTitle>AtraTech Download Solutions</AssemblyTitle>
+    <Company>AtraTech</Company>
+    <Description>Download queue manager with resumable, retryable downloads.</Description>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
   <!--
     No NuGet package references: this machine's only configured source is the offline
     Visual Studio package cache, which doesn't carry CommunityToolkit.Mvvm or Serilog.

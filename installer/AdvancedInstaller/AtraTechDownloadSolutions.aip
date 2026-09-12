@@ -10,10 +10,10 @@
     <ROW Property="ALLUSERS" Value="1"/>
     <ROW Property="ARPCOMMENTS" Value="This installer database contains the logic and data required to install [|ProductName]." ValueLocId="*"/>
     <ROW Property="ARPNOREPAIR" MultiBuildValue="DefaultBuild:1"/>
-    <ROW Property="Manufacturer" Value="Joe McCrocklin"/>
+    <ROW Property="Manufacturer" Value="AtraTech"/>
     <ROW Property="ProductCode" Value="1033:{765FD27E-C676-4E9F-86DB-387D0DC8F63E} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
-    <ROW Property="ProductName" Value="Download Manager Applet"/>
+    <ROW Property="ProductName" Value="AtraTech Download Solutions"/>
     <ROW Property="ProductVersion" Value="1.0.0" Options="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{D0F9F00A-C579-441D-BDA4-DDDB405D57D8}"/>
@@ -221,7 +221,7 @@
     <ROW Registry="Version" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Version" Value="[ProductVersion]" Component_="ProductInformation"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiShortsComponent">
-    <ROW Shortcut="DownloadManagerApplet" Directory_="ProgramMenuFolder" Name="DOWNLO~1|Download Manager Applet" Component_="DownloadManagerApplet.exe" Target="[#DownloadManagerApplet.exe]" Description="Download Manager Applet" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
+    <ROW Shortcut="AtraTechDownloadSolutions" Directory_="ProgramMenuFolder" Name="ATRATE~1|AtraTech Download Solutions" Component_="DownloadManagerApplet.exe" Target="[#DownloadManagerApplet.exe]" Description="AtraTech Download Solutions" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiThemeComponent">
     <ATTRIBUTE name="UsedTheme" value="classic"/>
