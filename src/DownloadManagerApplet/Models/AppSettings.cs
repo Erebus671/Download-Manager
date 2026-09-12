@@ -15,7 +15,7 @@ public enum LogLevelSetting
 public sealed class AppSettings
 {
     public string DefaultDownloadFolder { get; set; } =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Movies");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
 
     public int MaxConcurrentDownloads { get; set; } = 2;
     public int MaxRetryAttempts { get; set; } = 3;
