@@ -201,14 +201,14 @@ public sealed class MainViewModel : ObservableObject
         return string.IsNullOrWhiteSpace(name) ? $"download-{DateTime.Now:yyyyMMdd-HHmmss}" : name;
     }
 
-    private static string MakeUniqueFileName(string folder, string fileName)
+    private string MakeUniqueFileName(string folder, string fileName)
     {
         var candidate = fileName;
         var stem = Path.GetFileNameWithoutExtension(fileName);
         var ext = Path.GetExtension(fileName);
         var suffix = 1;
 
-        while (File.Exists(Path.Combine(folder, candidate)))
+        while (File.Exists(Path.Combine(folder, candidate)) || IsNameInUse(folder, candidate))
         {
             candidate = $"{stem} ({suffix}){ext}";
             suffix++;
@@ -216,4 +216,9 @@ public sealed class MainViewModel : ObservableObject
 
         return candidate;
     }
+
+    private bool IsNameInUse(string folder, string candidate) =>
+        _state.Downloads.Any(d =>
+            string.Equals(d.DestinationFolder, folder, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(d.FileName, candidate, StringComparison.OrdinalIgnoreCase));
 }

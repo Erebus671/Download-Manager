@@ -78,9 +78,12 @@
         <Border DockPanel.Dock="Top" Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,8">
             <StackPanel Orientation="Horizontal">
-                <Button Content="Pause All" Command="{Binding PauseAllCommand}" Margin="0,0,8,0" />
-                <Button Content="Resume All" Command="{Binding ResumeAllCommand}" Margin="0,0,8,0" />
-                <Button Content="Clear Completed" Command="{Binding ClearCompletedCommand}" />
+                <Button AutomationProperties.AutomationId="PauseAllButton"
+                        Content="Pause All" Command="{Binding PauseAllCommand}" Margin="0,0,8,0" />
+                <Button AutomationProperties.AutomationId="ResumeAllButton"
+                        Content="Resume All" Command="{Binding ResumeAllCommand}" Margin="0,0,8,0" />
+                <Button AutomationProperties.AutomationId="ClearCompletedButton"
+                        Content="Clear Completed" Command="{Binding ClearCompletedCommand}" />
             </StackPanel>
         </Border>
 
@@ -164,21 +167,26 @@
             <TabItem Header="Settings">
                 <StackPanel Margin="24" MaxWidth="480" HorizontalAlignment="Left">
                     <TextBlock Text="Default download folder" Foreground="{StaticResource TextDimBrush}" Margin="0,0,0,4" />
-                    <TextBox Text="{Binding Settings.DefaultDownloadFolder, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBox AutomationProperties.AutomationId="DefaultFolderTextBox"
+                             Text="{Binding Settings.DefaultDownloadFolder, UpdateSourceTrigger=PropertyChanged}" />
 
                     <TextBlock Text="Max concurrent downloads" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
-                    <TextBox Text="{Binding Settings.MaxConcurrentDownloads, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox AutomationProperties.AutomationId="MaxConcurrentTextBox"
+                             Text="{Binding Settings.MaxConcurrentDownloads, UpdateSourceTrigger=PropertyChanged}"
                              Width="80" HorizontalAlignment="Left" />
 
                     <TextBlock Text="Max retry attempts" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
-                    <TextBox Text="{Binding Settings.MaxRetryAttempts, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox AutomationProperties.AutomationId="MaxRetryTextBox"
+                             Text="{Binding Settings.MaxRetryAttempts, UpdateSourceTrigger=PropertyChanged}"
                              Width="80" HorizontalAlignment="Left" />
 
                     <TextBlock Text="Minimum log level" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
-                    <ComboBox ItemsSource="{Binding LogLevels}" SelectedItem="{Binding Settings.MinimumLogLevel}"
+                    <ComboBox AutomationProperties.AutomationId="LogLevelComboBox"
+                              ItemsSource="{Binding LogLevels}" SelectedItem="{Binding Settings.MinimumLogLevel}"
                               Width="140" HorizontalAlignment="Left" />
 
-                    <Button Content="Save Settings" Style="{StaticResource PrimaryButton}"
+                    <Button AutomationProperties.AutomationId="SaveSettingsButton"
+                            Content="Save Settings" Style="{StaticResource PrimaryButton}"
                             Command="{Binding SaveSettingsCommand}"
                             Margin="0,24,0,0" HorizontalAlignment="Left" />
                 </StackPanel>
