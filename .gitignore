@@ -11,3 +11,9 @@ obj/
 ## OS
 Thumbs.db
 .DS_Store
+
+## Build output (regenerate via dotnet publish / Advanced Installer build)
+publish/
+installer/Output/
+installer/AdvancedInstaller/*-cache/
+installer/AdvancedInstaller/*-backups/
