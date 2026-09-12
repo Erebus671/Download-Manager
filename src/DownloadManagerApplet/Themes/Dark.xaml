@@ -115,10 +115,17 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabControl">
-                    <DockPanel Background="{StaticResource BackgroundBrush}">
-                        <TabPanel DockPanel.Dock="Top" IsItemsHost="True" Background="{StaticResource PanelBrush}" />
+                    <DockPanel Background="{StaticResource BackgroundBrush}"
+                               KeyboardNavigation.TabNavigation="Local"
+                               KeyboardNavigation.DirectionalNavigation="Contained">
+                        <TabPanel DockPanel.Dock="Top" IsItemsHost="True" Background="{StaticResource PanelBrush}"
+                                  KeyboardNavigation.TabIndex="1" />
                         <Border BorderThickness="0,1,0,0" BorderBrush="{StaticResource AppBorderBrush}">
-                            <ContentPresenter ContentSource="SelectedContent" />
+                            <ContentPresenter x:Name="PART_SelectedContentHost"
+                                              ContentSource="SelectedContent"
+                                              KeyboardNavigation.TabIndex="2"
+                                              KeyboardNavigation.DirectionalNavigation="Contained"
+                                              KeyboardNavigation.TabNavigation="Local" />
                         </Border>
                     </DockPanel>
                 </ControlTemplate>

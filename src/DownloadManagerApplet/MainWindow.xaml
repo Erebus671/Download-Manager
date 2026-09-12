@@ -29,7 +29,8 @@
                         <TextBlock Grid.Column="0" Text="{Binding FileName}" FontWeight="SemiBold"
                                    Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis" />
                         <Border Grid.Column="1" Style="{StaticResource StatusPill}">
-                            <TextBlock Text="{Binding Status, Converter={StaticResource StatusToText}}"
+                            <TextBlock AutomationProperties.AutomationId="{Binding FileName, StringFormat='Status_{0}'}"
+                                       Text="{Binding Status, Converter={StaticResource StatusToText}}"
                                        FontSize="11" Foreground="{Binding Status, Converter={StaticResource StatusToBrush}}" />
                         </Border>
                     </Grid>
@@ -51,10 +52,13 @@
                                Visibility="{Binding LastError, Converter={StaticResource StringToVisibility}}" />
 
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Button Content="Pause" Style="{StaticResource SmallButton}" Command="{Binding PauseCommand}" Margin="0,0,6,0" />
-                        <Button Content="{Binding Status, Converter={StaticResource StatusToResumeLabel}}"
+                        <Button AutomationProperties.AutomationId="{Binding FileName, StringFormat='Pause_{0}'}"
+                                Content="Pause" Style="{StaticResource SmallButton}" Command="{Binding PauseCommand}" Margin="0,0,6,0" />
+                        <Button AutomationProperties.AutomationId="{Binding FileName, StringFormat='Resume_{0}'}"
+                                Content="{Binding Status, Converter={StaticResource StatusToResumeLabel}}"
                                 Style="{StaticResource SmallButton}" Command="{Binding ResumeCommand}" Margin="0,0,6,0" />
-                        <Button Content="Cancel" Style="{StaticResource SmallButton}" Command="{Binding CancelCommand}" Margin="0,0,6,0" />
+                        <Button AutomationProperties.AutomationId="{Binding FileName, StringFormat='Cancel_{0}'}"
+                                Content="Cancel" Style="{StaticResource SmallButton}" Command="{Binding CancelCommand}" Margin="0,0,6,0" />
                         <Button Content="Copy URL" Style="{StaticResource SmallButton}" Command="{Binding CopyUrlCommand}" />
                     </StackPanel>
                 </StackPanel>
