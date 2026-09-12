@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- TODO: bump to net10.0-windows once the .NET 10 SDK is installed on build machines -->
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <!--
+    No NuGet package references: this machine's only configured source is the offline
+    Visual Studio package cache, which doesn't carry CommunityToolkit.Mvvm or Serilog.
+    MVVM plumbing and file logging are hand-rolled instead (see Mvvm/ and Services/).
+  -->
+
+</Project>

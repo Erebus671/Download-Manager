@@ -1,0 +1,182 @@
+<Window x:Class="DownloadManagerApplet.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:conv="clr-namespace:DownloadManagerApplet.Converters"
+        xmlns:vm="clr-namespace:DownloadManagerApplet.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+        Title="Download Manager Applet" Height="720" Width="960" MinHeight="560" MinWidth="720"
+        Background="{StaticResource BackgroundBrush}"
+        FontFamily="Segoe UI" FontSize="13">
+
+    <Window.Resources>
+        <conv:StatusToBrushConverter x:Key="StatusToBrush" />
+        <conv:StatusToTextConverter x:Key="StatusToText" />
+        <conv:StatusToResumeLabelConverter x:Key="StatusToResumeLabel" />
+        <conv:LogLevelToBrushConverter x:Key="LogLevelToBrush" />
+        <conv:StringToVisibilityConverter x:Key="StringToVisibility" />
+
+        <DataTemplate x:Key="DownloadCardTemplate" DataType="{x:Type vm:DownloadItemViewModel}">
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding FileName}" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis" />
+                        <Border Grid.Column="1" Style="{StaticResource StatusPill}">
+                            <TextBlock Text="{Binding Status, Converter={StaticResource StatusToText}}"
+                                       FontSize="11" Foreground="{Binding Status, Converter={StaticResource StatusToBrush}}" />
+                        </Border>
+                    </Grid>
+
+                    <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}" Minimum="0" Maximum="100"
+                                 Margin="0,6,0,6" Foreground="{Binding Status, Converter={StaticResource StatusToBrush}}" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding ReceivedDisplay}" Foreground="{StaticResource TextDimBrush}" FontSize="11" />
+                        <TextBlock Grid.Column="1" Text="{Binding SpeedDisplay}" Foreground="{StaticResource TextDimBrush}" FontSize="11" />
+                    </Grid>
+
+                    <TextBlock Text="{Binding LastError}" Foreground="{StaticResource ErrBrush}" FontSize="11"
+                               Margin="0,4,0,0" TextWrapping="Wrap"
+                               Visibility="{Binding LastError, Converter={StaticResource StringToVisibility}}" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="Pause" Style="{StaticResource SmallButton}" Command="{Binding PauseCommand}" Margin="0,0,6,0" />
+                        <Button Content="{Binding Status, Converter={StaticResource StatusToResumeLabel}}"
+                                Style="{StaticResource SmallButton}" Command="{Binding ResumeCommand}" Margin="0,0,6,0" />
+                        <Button Content="Cancel" Style="{StaticResource SmallButton}" Command="{Binding CancelCommand}" Margin="0,0,6,0" />
+                        <Button Content="Copy URL" Style="{StaticResource SmallButton}" Command="{Binding CopyUrlCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <DockPanel>
+
+        <!-- Title bar -->
+        <Border DockPanel.Dock="Top" Background="{StaticResource PanelAltBrush}"
+                BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,8">
+            <TextBlock Text="Download Manager Applet" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
+        </Border>
+
+        <!-- Toolbar -->
+        <Border DockPanel.Dock="Top" Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,8">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="Pause All" Command="{Binding PauseAllCommand}" Margin="0,0,8,0" />
+                <Button Content="Resume All" Command="{Binding ResumeAllCommand}" Margin="0,0,8,0" />
+                <Button Content="Clear Completed" Command="{Binding ClearCompletedCommand}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Add bar -->
+        <Border DockPanel.Dock="Top" Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="220" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="URL:" Foreground="{StaticResource TextDimBrush}"
+                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBox Grid.Column="1" Text="{Binding NewDownloadUrl, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0" />
+                <TextBlock Grid.Column="2" Text="Save to:" Foreground="{StaticResource TextDimBrush}"
+                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBox Grid.Column="3" Text="{Binding NewDownloadFolder, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0" />
+                <Button Grid.Column="4" Content="Browse" Command="{Binding BrowseFolderCommand}" Margin="0,0,8,0" />
+                <Button Grid.Column="5" Content="Add" Style="{StaticResource PrimaryButton}" Command="{Binding AddDownloadCommand}" />
+            </Grid>
+        </Border>
+
+        <!-- Status bar -->
+        <Border DockPanel.Dock="Bottom" Background="{StaticResource PanelAltBrush}"
+                BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="12,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Foreground="{StaticResource TextDimBrush}" FontSize="11">
+                    <Run Text="{Binding Queue.Count, Mode=OneWay}" /><Run Text=" in queue &#183; " /><Run Text="{Binding History.Count, Mode=OneWay}" /><Run Text=" in history" />
+                </TextBlock>
+                <TextBlock Grid.Column="1" Foreground="{StaticResource TextDimBrush}" FontSize="11"
+                           Text="{Binding Settings.DefaultDownloadFolder}" />
+            </Grid>
+        </Border>
+
+        <!-- Log panel -->
+        <Border DockPanel.Dock="Bottom" Background="{StaticResource LogBackgroundBrush}"
+                BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="0,1,0,0" Height="140">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding LogEntries}" Margin="8">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock FontFamily="Consolas" FontSize="11" Margin="0,0,0,2"
+                                       Foreground="{Binding Level, Converter={StaticResource LogLevelToBrush}}">
+                                <Run Text="{Binding Timestamp, StringFormat='[HH:mm:ss]'}" />
+                                <Run Text=" " /><Run Text="{Binding Level}" FontWeight="Bold" />
+                                <Run Text="  " /><Run Text="{Binding Message}" />
+                            </TextBlock>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Main content -->
+        <TabControl>
+            <TabItem Header="Queue">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Queue}" Margin="12"
+                                  ItemTemplate="{StaticResource DownloadCardTemplate}" />
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="History">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding History}" Margin="12"
+                                  ItemTemplate="{StaticResource DownloadCardTemplate}" />
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Settings">
+                <StackPanel Margin="24" MaxWidth="480" HorizontalAlignment="Left">
+                    <TextBlock Text="Default download folder" Foreground="{StaticResource TextDimBrush}" Margin="0,0,0,4" />
+                    <TextBox Text="{Binding Settings.DefaultDownloadFolder, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <TextBlock Text="Max concurrent downloads" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
+                    <TextBox Text="{Binding Settings.MaxConcurrentDownloads, UpdateSourceTrigger=PropertyChanged}"
+                             Width="80" HorizontalAlignment="Left" />
+
+                    <TextBlock Text="Max retry attempts" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
+                    <TextBox Text="{Binding Settings.MaxRetryAttempts, UpdateSourceTrigger=PropertyChanged}"
+                             Width="80" HorizontalAlignment="Left" />
+
+                    <TextBlock Text="Minimum log level" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
+                    <ComboBox ItemsSource="{Binding LogLevels}" SelectedItem="{Binding Settings.MinimumLogLevel}"
+                              Width="140" HorizontalAlignment="Left" />
+
+                    <Button Content="Save Settings" Style="{StaticResource PrimaryButton}"
+                            Command="{Binding SaveSettingsCommand}"
+                            Margin="0,24,0,0" HorizontalAlignment="Left" />
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+
+    </DockPanel>
+</Window>
