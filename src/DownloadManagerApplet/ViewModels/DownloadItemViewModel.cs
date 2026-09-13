@@ -69,7 +69,7 @@ public sealed class DownloadItemViewModel : ObservableObject, IProgress<Download
         _orchestrator = orchestrator;
 
         PauseCommand = new RelayCommand(() => _orchestrator.Pause(Model), CanPause);
-        ResumeCommand = new RelayCommand(() => _orchestrator.Resume(Model), CanResume);
+        ResumeCommand = new RelayCommand(() => _orchestrator.Resume(Model, this), CanResume);
         CancelCommand = new RelayCommand(() => _orchestrator.Cancel(Model), CanCancel);
         CopyUrlCommand = new RelayCommand(() => Clipboard.SetText(Model.Url));
 

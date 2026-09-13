@@ -127,7 +127,7 @@ public sealed class MainViewModel : ObservableObject
     {
         foreach (var vm in Queue.Where(v => v.Status is DownloadStatus.Paused or DownloadStatus.Error).ToList())
         {
-            _orchestrator.Resume(vm.Model);
+            _orchestrator.Resume(vm.Model, vm);
         }
     }
 

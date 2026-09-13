@@ -83,7 +83,7 @@
                 <Button AutomationProperties.AutomationId="ResumeAllButton"
                         Content="Resume All" Command="{Binding ResumeAllCommand}" Margin="0,0,8,0" />
                 <Button AutomationProperties.AutomationId="ClearCompletedButton"
-                        Content="Clear Completed" Command="{Binding ClearCompletedCommand}" />
+                        Content="Clear Completed History" Command="{Binding ClearCompletedCommand}" />
             </StackPanel>
         </Border>
 
@@ -165,31 +165,33 @@
             </TabItem>
 
             <TabItem Header="Settings">
-                <StackPanel Margin="24" MaxWidth="480" HorizontalAlignment="Left">
-                    <TextBlock Text="Default download folder" Foreground="{StaticResource TextDimBrush}" Margin="0,0,0,4" />
-                    <TextBox AutomationProperties.AutomationId="DefaultFolderTextBox"
-                             Text="{Binding Settings.DefaultDownloadFolder, UpdateSourceTrigger=PropertyChanged}" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24" MaxWidth="480" HorizontalAlignment="Left">
+                        <TextBlock Text="Default download folder" Foreground="{StaticResource TextDimBrush}" Margin="0,0,0,4" />
+                        <TextBox AutomationProperties.AutomationId="DefaultFolderTextBox"
+                                 Text="{Binding Settings.DefaultDownloadFolder, UpdateSourceTrigger=PropertyChanged}" />
 
-                    <TextBlock Text="Max concurrent downloads" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
-                    <TextBox AutomationProperties.AutomationId="MaxConcurrentTextBox"
-                             Text="{Binding Settings.MaxConcurrentDownloads, UpdateSourceTrigger=PropertyChanged}"
-                             Width="80" HorizontalAlignment="Left" />
+                        <TextBlock Text="Max concurrent downloads" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
+                        <TextBox AutomationProperties.AutomationId="MaxConcurrentTextBox"
+                                 Text="{Binding Settings.MaxConcurrentDownloads, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="80" HorizontalAlignment="Left" />
 
-                    <TextBlock Text="Max retry attempts" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
-                    <TextBox AutomationProperties.AutomationId="MaxRetryTextBox"
-                             Text="{Binding Settings.MaxRetryAttempts, UpdateSourceTrigger=PropertyChanged}"
-                             Width="80" HorizontalAlignment="Left" />
+                        <TextBlock Text="Max retry attempts" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
+                        <TextBox AutomationProperties.AutomationId="MaxRetryTextBox"
+                                 Text="{Binding Settings.MaxRetryAttempts, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="80" HorizontalAlignment="Left" />
 
-                    <TextBlock Text="Minimum log level" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
-                    <ComboBox AutomationProperties.AutomationId="LogLevelComboBox"
-                              ItemsSource="{Binding LogLevels}" SelectedItem="{Binding Settings.MinimumLogLevel}"
-                              Width="140" HorizontalAlignment="Left" />
+                        <TextBlock Text="Minimum log level" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
+                        <ComboBox AutomationProperties.AutomationId="LogLevelComboBox"
+                                  ItemsSource="{Binding LogLevels}" SelectedItem="{Binding Settings.MinimumLogLevel}"
+                                  Width="140" HorizontalAlignment="Left" />
 
-                    <Button AutomationProperties.AutomationId="SaveSettingsButton"
-                            Content="Save Settings" Style="{StaticResource PrimaryButton}"
-                            Command="{Binding SaveSettingsCommand}"
-                            Margin="0,24,0,0" HorizontalAlignment="Left" />
-                </StackPanel>
+                        <Button AutomationProperties.AutomationId="SaveSettingsButton"
+                                Content="Save Settings" Style="{StaticResource PrimaryButton}"
+                                Command="{Binding SaveSettingsCommand}"
+                                Margin="0,24,0,24" HorizontalAlignment="Left" />
+                    </StackPanel>
+                </ScrollViewer>
             </TabItem>
         </TabControl>
 

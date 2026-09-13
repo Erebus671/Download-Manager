@@ -74,17 +74,15 @@ public sealed class DownloadOrchestrator
         }
     }
 
-    public void Resume(DownloadItem item)
+    public void Resume(DownloadItem item, IProgress<DownloadProgress> progress)
     {
         if (item.Status is DownloadStatus.Paused or DownloadStatus.Error or DownloadStatus.Canceled)
         {
             item.RetryCount = 0;
             item.LastError = null;
-            Enqueue(item, NullProgress);
+            Enqueue(item, progress);
         }
     }
-
-    private static readonly IProgress<DownloadProgress> NullProgress = new Progress<DownloadProgress>();
 
     private async Task ProcessItemAsync(DownloadItem item, IProgress<DownloadProgress> progress)
     {
