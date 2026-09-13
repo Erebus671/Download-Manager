@@ -51,7 +51,7 @@ public partial class App : Application
         _log?.Error("Unhandled UI exception", e.Exception);
         MessageBox.Show(
             $"An unexpected error occurred and has been logged:\n\n{e.Exception.Message}",
-            "Download Manager Applet",
+            "AtraTech Download Solutions",
             MessageBoxButton.OK,
             MessageBoxImage.Error);
         e.Handled = true;

@@ -5,11 +5,17 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:conv="clr-namespace:DownloadManagerApplet.Converters"
         xmlns:vm="clr-namespace:DownloadManagerApplet.ViewModels"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
         Title="AtraTech Download Solutions" Height="720" Width="960" MinHeight="560" MinWidth="720"
         Background="{StaticResource BackgroundBrush}"
+        WindowStyle="None" ResizeMode="CanResize"
         FontFamily="Segoe UI" FontSize="13">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="36" ResizeBorderThickness="6" CornerRadius="0" GlassFrameThickness="0" />
+    </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
         <conv:StatusToBrushConverter x:Key="StatusToBrush" />
@@ -68,10 +74,37 @@
 
     <DockPanel>
 
-        <!-- Title bar -->
+        <!-- Custom title bar (themed to match the app; replaces the native chrome) -->
         <Border DockPanel.Dock="Top" Background="{StaticResource PanelAltBrush}"
-                BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,8">
-            <TextBlock Text="AtraTech Download Solutions" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
+                BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="0,0,0,1" Height="36">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="AtraTech Download Solutions" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button Style="{StaticResource TitleBarButtonStyle}" Click="MinimizeButton_Click"
+                            AutomationProperties.AutomationId="MinimizeButton">
+                        <Path Data="M0,5 L10,5" Stroke="{StaticResource TextBrush}" StrokeThickness="1" />
+                    </Button>
+                    <Button Style="{StaticResource TitleBarButtonStyle}" Click="MaximizeRestoreButton_Click"
+                            AutomationProperties.AutomationId="MaximizeRestoreButton">
+                        <Grid Width="10" Height="10">
+                            <Path x:Name="MaximizeIcon" Data="M0.5,0.5 L9.5,0.5 L9.5,9.5 L0.5,9.5 Z"
+                                  Stroke="{StaticResource TextBrush}" StrokeThickness="1" />
+                            <Path x:Name="RestoreIcon" Visibility="Collapsed"
+                                  Data="M2.5,0.5 L9.5,0.5 L9.5,7.5 M0.5,2.5 L7.5,2.5 L7.5,9.5 L0.5,9.5 Z"
+                                  Stroke="{StaticResource TextBrush}" StrokeThickness="1" />
+                        </Grid>
+                    </Button>
+                    <Button Style="{StaticResource CloseTitleBarButtonStyle}" Click="CloseButton_Click"
+                            AutomationProperties.AutomationId="CloseButton">
+                        <Path Data="M0,0 L10,10 M0,10 L10,0" Stroke="{StaticResource TextBrush}" StrokeThickness="1" />
+                    </Button>
+                </StackPanel>
+            </Grid>
         </Border>
 
         <!-- Toolbar -->

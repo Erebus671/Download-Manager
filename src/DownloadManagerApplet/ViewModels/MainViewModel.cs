@@ -26,6 +26,8 @@ public sealed class MainViewModel : ObservableObject
     public AppSettings Settings => _state.Settings;
     public IReadOnlyList<LogLevelSetting> LogLevels { get; } = Enum.GetValues<LogLevelSetting>();
 
+    public bool HasRestoredPendingDownloads { get; }
+
     public string NewDownloadUrl
     {
         get => _newDownloadUrl;
@@ -71,6 +73,8 @@ public sealed class MainViewModel : ObservableObject
 
             AddViewModelFor(item);
         }
+
+        HasRestoredPendingDownloads = _state.Downloads.Any(d => d.Status == DownloadStatus.Paused);
 
         _orchestrator.StateChanged += OnOrchestratorStateChanged;
     }

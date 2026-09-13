@@ -1,0 +1,22 @@
+<Window x:Class="DownloadManagerApplet.ResumePromptWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AtraTech Download Solutions"
+        WindowStyle="None" ResizeMode="NoResize" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner" SizeToContent="WidthAndHeight"
+        Background="{StaticResource PanelBrush}"
+        FontFamily="Segoe UI" FontSize="13">
+
+    <Border BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="1" Padding="20">
+        <StackPanel Width="360">
+            <TextBlock Text="Resume downloads?" FontWeight="SemiBold" FontSize="15"
+                       Foreground="{StaticResource TextBrush}" Margin="0,0,0,12" />
+            <TextBlock Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" Margin="0,0,0,20"
+                       Text="Last time you closed this application, you still had downloads pending, would you like to resume them?" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="No" IsCancel="True" Click="No_Click" Margin="0,0,8,0" MinWidth="72" />
+                <Button Content="Yes" IsDefault="True" Style="{StaticResource PrimaryButton}" Click="Yes_Click" MinWidth="72" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>
