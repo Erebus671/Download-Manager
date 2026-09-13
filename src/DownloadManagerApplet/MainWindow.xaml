@@ -135,7 +135,11 @@
                 <TextBlock Grid.Column="0" Text="URL:" Foreground="{StaticResource TextDimBrush}"
                            VerticalAlignment="Center" Margin="0,0,8,0" />
                 <TextBox Grid.Column="1" AutomationProperties.AutomationId="UrlTextBox"
-                         Text="{Binding NewDownloadUrl, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0" />
+                         Text="{Binding NewDownloadUrl, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Return" Command="{Binding AddDownloadCommand}" />
+                    </TextBox.InputBindings>
+                </TextBox>
                 <TextBlock Grid.Column="2" Text="Save to:" Foreground="{StaticResource TextDimBrush}"
                            VerticalAlignment="Center" Margin="0,0,8,0" />
                 <TextBox Grid.Column="3" AutomationProperties.AutomationId="FolderTextBox"
