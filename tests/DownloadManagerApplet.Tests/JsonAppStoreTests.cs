@@ -5,13 +5,12 @@ using DotNetTestKit;
 
 namespace DownloadManagerApplet.Tests;
 
-public class JsonAppStoreTests
+public class JsonAppStoreTests : TestBase
 {
     [Fact]
     public void SaveThenLoad_RoundTripsSettingsAndDownloads()
     {
-        using var temp = new TempDirectory();
-        var store = new JsonAppStore(Path.Combine(temp.Path, "state.json"), NullLoggingService.Instance);
+        var store = new JsonAppStore(Path.Combine(Temp.Path, "state.json"), NullLoggingService.Instance);
 
         var state = new AppState
         {
@@ -50,8 +49,7 @@ public class JsonAppStoreTests
     [Fact]
     public void Load_ReturnsFreshState_WhenFileDoesNotExist()
     {
-        using var temp = new TempDirectory();
-        var store = new JsonAppStore(Path.Combine(temp.Path, "does-not-exist.json"), NullLoggingService.Instance);
+        var store = new JsonAppStore(Path.Combine(Temp.Path, "does-not-exist.json"), NullLoggingService.Instance);
 
         var state = store.Load();
 
