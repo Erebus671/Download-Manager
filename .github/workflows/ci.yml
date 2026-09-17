@@ -27,13 +27,10 @@ jobs:
           --username Erebus671
           --password ${{ secrets.GH_PACKAGES_READ_TOKEN }}
           --store-password-in-clear-text
-          --configfile nuget.config
+          --configfile nuget.ci.config
 
       - name: Restore
-        run: >-
-          dotnet restore DownloadManagerApplet.sln
-          --source https://api.nuget.org/v3/index.json
-          --source https://nuget.pkg.github.com/Erebus671/index.json
+        run: dotnet restore DownloadManagerApplet.sln --configfile nuget.ci.config
 
       - name: Build
         run: dotnet build DownloadManagerApplet.sln -c Release --no-restore
