@@ -82,8 +82,12 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="AtraTech Download Solutions" FontWeight="SemiBold"
-                           Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="12,0,0,0">
+                    <Image x:Name="TitleBarIcon" Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality" Visibility="Collapsed" />
+                    <TextBlock Text="AtraTech Download Solutions" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" />
+                </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" shell:WindowChrome.IsHitTestVisibleInChrome="True">
                     <Button Style="{StaticResource TitleBarButtonStyle}" Click="MinimizeButton_Click"
                             AutomationProperties.AutomationId="MinimizeButton">

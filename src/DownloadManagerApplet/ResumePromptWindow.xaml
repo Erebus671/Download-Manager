@@ -9,8 +9,12 @@
 
     <Border BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="1" Padding="20">
         <StackPanel Width="360">
-            <TextBlock Text="Resume downloads?" FontWeight="SemiBold" FontSize="15"
-                       Foreground="{StaticResource TextBrush}" Margin="0,0,0,12" />
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                <Image x:Name="TitleIcon" Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="HighQuality" Visibility="Collapsed" />
+                <TextBlock Text="Resume downloads?" FontWeight="SemiBold" FontSize="15"
+                           Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" />
+            </StackPanel>
             <TextBlock Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" Margin="0,0,0,20"
                        Text="Last time you closed this application, you still had downloads pending, would you like to resume them?" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

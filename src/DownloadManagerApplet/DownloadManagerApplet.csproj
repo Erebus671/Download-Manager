@@ -16,6 +16,14 @@
     <Version>1.0.0</Version>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(AppIconPath)' != '' And Exists('$(AppIconPath)')">
+    <ApplicationIcon>$(AppIconPath)</ApplicationIcon>
+  </PropertyGroup>
+
+  <Target Name="WarnMissingAppIcon" BeforeTargets="Build" Condition="'$(AppIconPath)' != '' And !Exists('$(AppIconPath)')">
+    <Warning Text="AppIconPath '$(AppIconPath)' not found; building with the default icon." />
+  </Target>
+  
   <!--
     No NuGet package references: this machine's only configured source is the offline
     Visual Studio package cache, which doesn't carry CommunityToolkit.Mvvm or Serilog.

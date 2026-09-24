@@ -42,7 +42,7 @@ public partial class App : Application
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 
-        var window = new MainWindow { DataContext = mainViewModel };
+        var window = new MainWindow(AppIcon.TryLoadSmall(_log)) { DataContext = mainViewModel };
         window.Show();
     }
 

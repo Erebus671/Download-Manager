@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Shell;
 using DownloadManagerApplet.ViewModels;
 
@@ -8,9 +9,17 @@ namespace DownloadManagerApplet;
 
 public partial class MainWindow : Window
 {
-    public MainWindow()
+    private readonly ImageSource? _titleBarIcon;
+
+    public MainWindow(ImageSource? titleBarIcon)
     {
         InitializeComponent();
+        _titleBarIcon = titleBarIcon;
+        if (titleBarIcon is not null)
+        {
+            TitleBarIcon.Source = titleBarIcon;
+            TitleBarIcon.Visibility = Visibility.Visible;
+        }
         StateChanged += (_, _) => UpdateMaximizeRestoreIcon();
         Loaded += MainWindow_Loaded;
     }
@@ -89,7 +98,7 @@ public partial class MainWindow : Window
     {
         if (DataContext is MainViewModel viewModel && viewModel.HasRestoredPendingDownloads)
         {
-            var prompt = new ResumePromptWindow { Owner = this };
+            var prompt = new ResumePromptWindow(_titleBarIcon) { Owner = this };
             if (prompt.ShowDialog() == true)
             {
                 viewModel.ResumeAllCommand.Execute(null);
