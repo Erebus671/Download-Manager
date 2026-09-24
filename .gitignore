@@ -17,3 +17,7 @@ publish/
 installer/Output/
 installer/AdvancedInstaller/*-cache/
 installer/AdvancedInstaller/*-backups/
+
+## Internal working files
+chat-transcript.md
+\!Claude/
