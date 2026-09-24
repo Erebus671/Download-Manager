@@ -24,6 +24,7 @@ A Windows download manager with a queue, pause/resume, and automatic retries.
 
 1. Download `AtraTechDownloadSolutions.exe` from the [Releases](https://github.com/Erebus671/Download-Manager/releases) page.
 2. Run it and accept the Windows administrator prompt.
+   - The installer isn't code-signed yet, so Windows SmartScreen may show **"Windows protected your PC"**. Click **More info**, then **Run anyway**.
 3. Choose an install folder.
 4. Choose where you want shortcuts: Desktop, Start Menu, or both.
 5. Finish the wizard. Launch the app from the shortcut.
