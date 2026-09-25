@@ -27,6 +27,7 @@ public sealed class DownloadItemViewModel : ObservableObject, IProgress<Download
                 PauseCommand.NotifyCanExecuteChanged();
                 ResumeCommand.NotifyCanExecuteChanged();
                 CancelCommand.NotifyCanExecuteChanged();
+                RenameCommand.NotifyCanExecuteChanged();
             }
         }
     }
@@ -56,14 +57,21 @@ public sealed class DownloadItemViewModel : ObservableObject, IProgress<Download
     }
 
     public string FileName => Model.FileName;
+    public string DestinationFolder => Model.DestinationFolder;
+
+    /// <summary>"Videos", "Documents", ...; null for Other files and legacy downloads.</summary>
+    public string? CategoryLabel =>
+        Model.Category is { } category and not FileCategory.Other ? DestinationResolver.DisplayName(category) : null;
+
     public string Url => Model.Url;
 
     public RelayCommand PauseCommand { get; }
     public RelayCommand ResumeCommand { get; }
     public RelayCommand CancelCommand { get; }
     public RelayCommand CopyUrlCommand { get; }
+    public RelayCommand RenameCommand { get; }
 
-    public DownloadItemViewModel(DownloadItem model, DownloadOrchestrator orchestrator)
+    public DownloadItemViewModel(DownloadItem model, DownloadOrchestrator orchestrator, Action<DownloadItemViewModel>? rename = null)
     {
         Model = model;
         _orchestrator = orchestrator;
@@ -72,6 +80,7 @@ public sealed class DownloadItemViewModel : ObservableObject, IProgress<Download
         ResumeCommand = new RelayCommand(() => _orchestrator.Resume(Model, this), CanResume);
         CancelCommand = new RelayCommand(() => _orchestrator.Cancel(Model), CanCancel);
         CopyUrlCommand = new RelayCommand(() => Clipboard.SetText(Model.Url));
+        RenameCommand = new RelayCommand(() => rename?.Invoke(this), () => rename is not null && Status != DownloadStatus.Canceled);
 
         RefreshFromModel();
     }
@@ -80,6 +89,10 @@ public sealed class DownloadItemViewModel : ObservableObject, IProgress<Download
     {
         RunOnUiThread(() =>
         {
+            // Name, folder and category read the model directly; the engine may have changed them.
+            OnPropertyChanged(nameof(FileName));
+            OnPropertyChanged(nameof(DestinationFolder));
+            OnPropertyChanged(nameof(CategoryLabel));
             Status = Model.Status;
             LastError = Model.LastError;
             ProgressPercent = ComputePercent(Model.BytesReceived, Model.TotalBytes);

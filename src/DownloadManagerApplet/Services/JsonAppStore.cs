@@ -33,7 +33,12 @@ public sealed class JsonAppStore : IAppStore
             try
             {
                 var json = File.ReadAllText(_filePath);
-                return JsonSerializer.Deserialize<AppState>(json, SerializerOptions) ?? new AppState();
+                var state = JsonSerializer.Deserialize<AppState>(json, SerializerOptions) ?? new AppState();
+                state.Settings ??= new Models.AppSettings();
+                state.Downloads ??= new List<Models.DownloadItem>();
+                state.Updates ??= new UpdateState();
+                DestinationResolver.Normalize(state.Settings);
+                return state;
             }
             catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
             {
@@ -43,7 +48,7 @@ public sealed class JsonAppStore : IAppStore
         }
     }
 
-    public void Save(AppState state)
+    public bool Save(AppState state)
     {
         lock (_fileLock)
         {
@@ -53,10 +58,12 @@ public sealed class JsonAppStore : IAppStore
                 var json = JsonSerializer.Serialize(state, SerializerOptions);
                 File.WriteAllText(tempPath, json);
                 File.Move(tempPath, _filePath, overwrite: true);
+                return true;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 _log.Error($"Failed to save application state to {_filePath}", ex);
+                return false;
             }
         }
     }

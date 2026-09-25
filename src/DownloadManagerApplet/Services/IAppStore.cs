@@ -27,5 +27,6 @@ public sealed class PendingUpdateResume
 public interface IAppStore
 {
     AppState Load();
-    void Save(AppState state);
+    /// <summary>Writes the state; false if it could not be saved (the error is logged).</summary>
+    bool Save(AppState state);
 }

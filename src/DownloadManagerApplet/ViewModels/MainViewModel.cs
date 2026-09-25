@@ -1,13 +1,26 @@
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Threading;
 using DownloadManagerApplet.Models;
 using DownloadManagerApplet.Mvvm;
 using DownloadManagerApplet.Services;
-using Microsoft.Win32;
 
 namespace DownloadManagerApplet.ViewModels;
+
+public enum SaveTargetKind
+{
+    Automatic,
+    Category,
+    Folder,
+    Browse
+}
+
+/// <summary>One entry of the add bar's "Save to" list.</summary>
+public sealed record SaveTargetOption(SaveTargetKind Kind, string Label, FileCategory? Category = null, string? Folder = null)
+{
+    public override string ToString() => Label;
+}
 
 public sealed class MainViewModel : ObservableObject
 {
@@ -16,12 +29,18 @@ public sealed class MainViewModel : ObservableObject
     private readonly ILoggingService _log;
     private readonly AppState _state;
     private readonly List<Guid> _resumeAfterUpdate = new();
+    private readonly DestinationPlanner _planner;
+    private DispatcherTimer? _saveMessageTimer;
 
     private static readonly TimeSpan PendingResumeMaxAge = TimeSpan.FromHours(2);
     private static readonly TimeSpan SuspendTimeout = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan SaveMessageDuration = TimeSpan.FromSeconds(4);
 
     private string _newDownloadUrl = string.Empty;
-    private string _newDownloadFolder;
+    private SaveTargetOption _selectedSaveTarget;
+    private SaveTargetOption _lastRealSaveTarget;
+    private string? _settingsSaveMessage;
+    private bool _settingsSaveFailed;
 
     public ObservableCollection<DownloadItemViewModel> Queue { get; } = new();
     public ObservableCollection<DownloadItemViewModel> History { get; } = new();
@@ -30,6 +49,15 @@ public sealed class MainViewModel : ObservableObject
     public AppSettings Settings => _state.Settings;
     public UpdatesViewModel? Updates { get; }
     public IReadOnlyList<LogLevelSetting> LogLevels { get; } = Enum.GetValues<LogLevelSetting>();
+    public DestinationSettingsViewModel Destinations { get; }
+    public ObservableCollection<SaveTargetOption> SaveTargets { get; } = new();
+
+    /// <summary>Folder picker for "Choose folder..."; replaceable for tests. Takes the starting folder, returns the choice or null.</summary>
+    public Func<string, string?> PickFolder
+    {
+        get => Destinations.PickFolder;
+        set => Destinations.PickFolder = value;
+    }
 
     public bool HasRestoredPendingDownloads { get; }
 
@@ -44,30 +72,75 @@ public sealed class MainViewModel : ObservableObject
         set => SetProperty(ref _newDownloadUrl, value);
     }
 
-    public string NewDownloadFolder
+    public SaveTargetOption SelectedSaveTarget
     {
-        get => _newDownloadFolder;
-        set => SetProperty(ref _newDownloadFolder, value);
+        get => _selectedSaveTarget;
+        set
+        {
+            if (value is null || !SetProperty(ref _selectedSaveTarget, value))
+            {
+                return;
+            }
+
+            if (value.Kind != SaveTargetKind.Browse)
+            {
+                _lastRealSaveTarget = value;
+                return;
+            }
+
+            // From the ComboBox: let it finish its selection change before the dialog opens.
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher is not null && dispatcher.CheckAccess())
+            {
+                dispatcher.BeginInvoke(ChooseSaveFolder);
+            }
+            else
+            {
+                ChooseSaveFolder();
+            }
+        }
+    }
+
+    /// <summary>"Settings saved", or why saving failed; clears itself after a few seconds.</summary>
+    public string? SettingsSaveMessage
+    {
+        get => _settingsSaveMessage;
+        private set => SetProperty(ref _settingsSaveMessage, value);
+    }
+
+    public bool SettingsSaveFailed
+    {
+        get => _settingsSaveFailed;
+        private set => SetProperty(ref _settingsSaveFailed, value);
     }
 
     public RelayCommand AddDownloadCommand { get; }
-    public RelayCommand BrowseFolderCommand { get; }
     public RelayCommand PauseAllCommand { get; }
     public RelayCommand ResumeAllCommand { get; }
     public RelayCommand ClearCompletedCommand { get; }
     public RelayCommand SaveSettingsCommand { get; }
 
-    public MainViewModel(AppState state, IAppStore store, DownloadOrchestrator orchestrator, ILoggingService log, UpdatesViewModel? updates = null)
+    public MainViewModel(
+        AppState state,
+        IAppStore store,
+        DownloadOrchestrator orchestrator,
+        ILoggingService log,
+        UpdatesViewModel? updates = null,
+        DestinationPlanner? planner = null)
     {
         Updates = updates;
         _state = state;
         _store = store;
         _orchestrator = orchestrator;
         _log = log;
-        _newDownloadFolder = state.Settings.DefaultDownloadFolder;
+        _planner = planner ?? new DestinationPlanner(state, log);
+        _planner.DestinationChanged += OnDestinationChanged;
+        Destinations = new DestinationSettingsViewModel(state.Settings, () => Persist());
+
+        BuildSaveTargets();
+        _selectedSaveTarget = _lastRealSaveTarget = SaveTargets[0];
 
         AddDownloadCommand = new RelayCommand(AddDownload);
-        BrowseFolderCommand = new RelayCommand(BrowseFolder);
         PauseAllCommand = new RelayCommand(PauseAll);
         ResumeAllCommand = new RelayCommand(ResumeAll);
         ClearCompletedCommand = new RelayCommand(ClearCompleted);
@@ -92,20 +165,27 @@ public sealed class MainViewModel : ObservableObject
 
     private void AddDownload()
     {
-        var folder = string.IsNullOrWhiteSpace(NewDownloadFolder) ? Settings.DefaultDownloadFolder : NewDownloadFolder;
+        var target = SelectedSaveTarget.Kind == SaveTargetKind.Browse ? _lastRealSaveTarget : SelectedSaveTarget;
+        var folder = target.Kind switch
+        {
+            SaveTargetKind.Category => DestinationResolver.CategoryFolder(Settings, target.Category ?? FileCategory.Other),
+            SaveTargetKind.Folder => target.Folder,
+            _ => null
+        };
+
         if (TryAddDownload(NewDownloadUrl, folder))
         {
             NewDownloadUrl = string.Empty;
         }
     }
 
-    /// <summary>Queues URLs handed over by another process into the default folder. Returns the number queued.</summary>
+    /// <summary>Queues URLs handed over by another process, with the folder chosen automatically. Returns the number queued.</summary>
     public int AddExternalDownloads(IEnumerable<string> urls)
     {
         var added = 0;
         foreach (var url in urls)
         {
-            if (TryAddDownload(url, Settings.DefaultDownloadFolder))
+            if (TryAddDownload(url, null))
             {
                 added++;
             }
@@ -114,7 +194,8 @@ public sealed class MainViewModel : ObservableObject
         return added;
     }
 
-    private bool TryAddDownload(string rawUrl, string folder)
+    /// <summary>A null <paramref name="folder"/> means Automatic (rules, then file type).</summary>
+    private bool TryAddDownload(string rawUrl, string? folder)
     {
         var url = rawUrl.Trim();
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
@@ -123,15 +204,13 @@ public sealed class MainViewModel : ObservableObject
             return false;
         }
 
-        var fileName = MakeUniqueFileName(folder, DeriveFileName(uri));
-
-        var item = new DownloadItem
+        if (folder is not null && !DestinationResolver.IsUsableFolder(folder))
         {
-            Url = url,
-            FileName = fileName,
-            DestinationFolder = folder
-        };
+            _log.Warn($"Folder '{folder}' is not usable; choosing one automatically for {url}");
+            folder = null;
+        }
 
+        var item = _planner.CreateItem(url, uri, folder);
         _state.Downloads.Add(item);
         var vm = AddViewModelFor(item);
         _orchestrator.Enqueue(item, vm);
@@ -139,17 +218,75 @@ public sealed class MainViewModel : ObservableObject
         return true;
     }
 
-    private void BrowseFolder()
+    private void BuildSaveTargets()
     {
-        var dialog = new OpenFolderDialog
+        SaveTargets.Add(new SaveTargetOption(SaveTargetKind.Automatic, "Automatic (by file type)"));
+        foreach (var category in DestinationResolver.SortedCategories.Append(FileCategory.Other))
         {
-            InitialDirectory = Directory.Exists(NewDownloadFolder) ? NewDownloadFolder : Settings.DefaultDownloadFolder
+            SaveTargets.Add(new SaveTargetOption(SaveTargetKind.Category, DestinationResolver.DisplayName(category), category));
+        }
+
+        SaveTargets.Add(new SaveTargetOption(SaveTargetKind.Browse, "Choose folder..."));
+    }
+
+    private void ChooseSaveFolder()
+    {
+        var start = _lastRealSaveTarget.Kind switch
+        {
+            SaveTargetKind.Folder => _lastRealSaveTarget.Folder!,
+            SaveTargetKind.Category => DestinationResolver.CategoryFolder(Settings, _lastRealSaveTarget.Category ?? FileCategory.Other),
+            _ => Settings.DefaultDownloadFolder
         };
 
-        if (dialog.ShowDialog() == true)
+        string? chosen;
+        try
         {
-            NewDownloadFolder = dialog.FolderName;
+            chosen = PickFolder(start);
         }
+        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            _log.Error("Could not open the folder picker", ex);
+            chosen = null;
+        }
+
+        if (string.IsNullOrWhiteSpace(chosen))
+        {
+            SelectedSaveTarget = _lastRealSaveTarget;
+            return;
+        }
+
+        var existing = SaveTargets.FirstOrDefault(t => t.Kind == SaveTargetKind.Folder && string.Equals(t.Folder, chosen, StringComparison.OrdinalIgnoreCase));
+        if (existing is null)
+        {
+            existing = new SaveTargetOption(SaveTargetKind.Folder, chosen, Folder: chosen);
+            SaveTargets.Insert(SaveTargets.Count - 1, existing);
+        }
+
+        SelectedSaveTarget = existing;
+    }
+
+    /// <summary>Shows the rename dialog; set by the window. Returns true when the user renamed.</summary>
+    public Func<RenameViewModel, bool>? ShowRenameDialog { get; set; }
+
+    private void Rename(DownloadItemViewModel vm)
+    {
+        if (ShowRenameDialog is null)
+        {
+            return;
+        }
+
+        // Success raises DestinationChanged, which refreshes the card and persists.
+        ShowRenameDialog(new RenameViewModel(vm.FileName, name => _planner.Rename(vm.Model, name)));
+    }
+
+    private void OnDestinationChanged(DownloadItem item)
+    {
+        foreach (var vm in Queue.Concat(History).Where(v => ReferenceEquals(v.Model, item)).ToList())
+        {
+            vm.RefreshFromModel();
+        }
+
+        Persist();
     }
 
     private void PauseAll()
@@ -262,13 +399,63 @@ public sealed class MainViewModel : ObservableObject
 
     private void SaveSettings()
     {
+        var problem = ValidateSettings();
+        if (problem is not null)
+        {
+            _log.Warn($"Settings not saved: {problem}");
+            ShowSaveMessage("⚠ " + problem, failed: true);
+            return;
+        }
+
         _log.MinimumLevel = Settings.MinimumLogLevel;
-        Persist();
+        if (Persist())
+        {
+            _log.Info("Settings saved");
+            ShowSaveMessage("✓ Settings saved", failed: false);
+        }
+        else
+        {
+            ShowSaveMessage("⚠ Could not save settings (see log)", failed: true);
+        }
+    }
+
+    private string? ValidateSettings()
+    {
+        if (Settings.MaxConcurrentDownloads is < 1 or > 10)
+        {
+            return "Max concurrent downloads must be 1 to 10.";
+        }
+
+        if (Settings.MaxRetryAttempts is < 0 or > 20)
+        {
+            return "Max retry attempts must be 0 to 20.";
+        }
+
+        return Destinations.Validate();
+    }
+
+    private void ShowSaveMessage(string message, bool failed)
+    {
+        SettingsSaveFailed = failed;
+        SettingsSaveMessage = message;
+
+        if (Application.Current?.Dispatcher is not { } dispatcher || !dispatcher.CheckAccess())
+        {
+            return;
+        }
+
+        _saveMessageTimer ??= new DispatcherTimer(SaveMessageDuration, DispatcherPriority.Background, (_, _) =>
+        {
+            _saveMessageTimer!.Stop();
+            SettingsSaveMessage = null;
+        }, dispatcher);
+        _saveMessageTimer.Stop();
+        _saveMessageTimer.Start();
     }
 
     private DownloadItemViewModel AddViewModelFor(DownloadItem item)
     {
-        var vm = new DownloadItemViewModel(item, _orchestrator);
+        var vm = new DownloadItemViewModel(item, _orchestrator, Rename);
         PlaceInCollection(vm);
         return vm;
     }
@@ -310,32 +497,5 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    private void Persist() => _store.Save(_state);
-
-    private static string DeriveFileName(Uri uri)
-    {
-        var name = Path.GetFileName(uri.LocalPath);
-        return string.IsNullOrWhiteSpace(name) ? $"download-{DateTime.Now:yyyyMMdd-HHmmss}" : name;
-    }
-
-    private string MakeUniqueFileName(string folder, string fileName)
-    {
-        var candidate = fileName;
-        var stem = Path.GetFileNameWithoutExtension(fileName);
-        var ext = Path.GetExtension(fileName);
-        var suffix = 1;
-
-        while (File.Exists(Path.Combine(folder, candidate)) || IsNameInUse(folder, candidate))
-        {
-            candidate = $"{stem} ({suffix}){ext}";
-            suffix++;
-        }
-
-        return candidate;
-    }
-
-    private bool IsNameInUse(string folder, string candidate) =>
-        _state.Downloads.Any(d =>
-            string.Equals(d.DestinationFolder, folder, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(d.FileName, candidate, StringComparison.OrdinalIgnoreCase));
+    private bool Persist() => _store.Save(_state);
 }

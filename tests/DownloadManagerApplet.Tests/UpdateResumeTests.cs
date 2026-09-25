@@ -87,8 +87,7 @@ public class UpdateResumeTests : TestBase
 
     private AppState NewState()
     {
-        var state = new AppState();
-        state.Settings.DefaultDownloadFolder = Temp.Path;
+        var state = TestStates.InFolder(Temp.Path);
         return state;
     }
 

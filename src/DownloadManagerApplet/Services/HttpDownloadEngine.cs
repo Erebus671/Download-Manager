@@ -14,17 +14,17 @@ public sealed class HttpDownloadEngine : IDownloadEngine
 
     private readonly HttpClient _httpClient;
     private readonly ILoggingService _log;
+    private readonly DestinationPlanner? _planner;
 
-    public HttpDownloadEngine(HttpClient httpClient, ILoggingService log)
+    public HttpDownloadEngine(HttpClient httpClient, ILoggingService log, DestinationPlanner? planner = null)
     {
         _httpClient = httpClient;
         _log = log;
+        _planner = planner;
     }
 
     public async Task DownloadAsync(DownloadItem item, IProgress<DownloadProgress> progress, CancellationToken cancellationToken)
     {
-        Directory.CreateDirectory(item.DestinationFolder);
-
         var resumeOffset = File.Exists(item.PartFilePath) ? new FileInfo(item.PartFilePath).Length : 0L;
 
         using var request = new HttpRequestMessage(HttpMethod.Get, item.Url);
@@ -54,6 +54,12 @@ public sealed class HttpDownloadEngine : IDownloadEngine
         }
 
         response.EnsureSuccessStatusCode();
+        if (resumeOffset == 0)
+        {
+            PlanDestination(item, response, cancellationToken);
+        }
+
+        Directory.CreateDirectory(item.DestinationFolder);
 
         var contentLength = response.Content.Headers.ContentLength;
         item.TotalBytes = serverHonoredRange && contentLength.HasValue
@@ -78,6 +84,8 @@ public sealed class HttpDownloadEngine : IDownloadEngine
             .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
+        PlanDestination(item, response, cancellationToken);
+        Directory.CreateDirectory(item.DestinationFolder);
 
         item.TotalBytes = response.Content.Headers.ContentLength;
 
@@ -89,6 +97,29 @@ public sealed class HttpDownloadEngine : IDownloadEngine
         }
 
         Finalize(item);
+    }
+
+    /// <summary>Lets the planner settle the final name and folder; removes an empty .part left at the first-guess path.</summary>
+    private void PlanDestination(DownloadItem item, HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        if (_planner is null || !item.ResolveOnResponse)
+        {
+            return;
+        }
+
+        var oldPart = item.PartFilePath;
+        _planner.ApplyResponse(item, response, cancellationToken);
+        if (!string.Equals(oldPart, item.PartFilePath, StringComparison.OrdinalIgnoreCase) && File.Exists(oldPart))
+        {
+            try
+            {
+                File.Delete(oldPart);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                _log.Debug($"Could not remove unused {oldPart}: {ex.Message}");
+            }
+        }
     }
 
     private static async Task CopyWithProgressAsync(
@@ -130,14 +161,19 @@ public sealed class HttpDownloadEngine : IDownloadEngine
 
     private static void Finalize(DownloadItem item)
     {
-        // Ensure the destination isn't left over from a previous failed run before the atomic rename.
-        if (File.Exists(item.FullPath))
+        // Locked so a rename can't land between the move and the status change (see DestinationPlanner.Rename).
+        lock (item)
         {
-            File.Delete(item.FullPath);
-        }
+            // Ensure the destination isn't left over from a previous failed run before the atomic rename.
+            if (File.Exists(item.FullPath))
+            {
+                File.Delete(item.FullPath);
+            }
 
-        File.Move(item.PartFilePath, item.FullPath);
-        item.Status = DownloadStatus.Completed;
-        item.CompletedAt = DateTimeOffset.Now;
+            File.Move(item.PartFilePath, item.FullPath);
+            item.PartFileName = null;
+            item.Status = DownloadStatus.Completed;
+            item.CompletedAt = DateTimeOffset.Now;
+        }
     }
 }

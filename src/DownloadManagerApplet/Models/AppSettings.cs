@@ -1,4 +1,4 @@
-using System.IO;
+using DownloadManagerApplet.Services;
 
 namespace DownloadManagerApplet.Models;
 
@@ -22,8 +22,14 @@ public enum UpdateCheckFrequency
 
 public sealed class AppSettings
 {
-    public string DefaultDownloadFolder { get; set; } =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+    /// <summary>Where "Other files" go, and every download when sorting by file type is off.</summary>
+    public string DefaultDownloadFolder { get; set; } = KnownFolders.Downloads;
+
+    public bool SortByFileType { get; set; } = true;
+    public List<CategoryFolder> Categories { get; set; } = DestinationResolver.CreateDefaultCategories();
+
+    /// <summary>Checked in order before file-type sorting; the first match wins.</summary>
+    public List<DestinationRule> DestinationRules { get; set; } = new();
 
     public int MaxConcurrentDownloads { get; set; } = 2;
     public int MaxRetryAttempts { get; set; } = 3;

@@ -115,6 +115,21 @@ public partial class MainWindow : Window
             return;
         }
 
+        viewModel.ShowRenameDialog = editor =>
+            new RenameWindow(editor, _titleBarIcon) { Owner = this }.ShowDialog() == true;
+
+        var destinations = viewModel.Destinations;
+        destinations.ShowRuleEditor = editor =>
+        {
+            var dialog = new RuleEditorWindow(editor, _titleBarIcon) { Owner = this };
+            dialog.ShowDialog();
+            return dialog.Result;
+        };
+        destinations.ShowFileTypesEditor = editor =>
+            new FileTypesWindow(editor, _titleBarIcon) { Owner = this }.ShowDialog() == true;
+        destinations.Confirm = question =>
+            MessageBox.Show(this, question, "AtraTech Download Solutions", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes;
+
         if (viewModel.Updates is { } updates)
         {
             updates.PromptRequested += update => ShowUpdatePrompt(viewModel, updates, update);

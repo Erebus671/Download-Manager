@@ -33,8 +33,15 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="{Binding FileName}" FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis" />
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <TextBlock Text="{Binding FileName}" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis" />
+                            <Border Style="{StaticResource StatusPill}" Margin="8,0,0,0" VerticalAlignment="Center"
+                                    Visibility="{Binding CategoryLabel, Converter={StaticResource StringToVisibility}}">
+                                <TextBlock AutomationProperties.AutomationId="{Binding FileName, StringFormat='Category_{0}'}"
+                                           Text="{Binding CategoryLabel}" FontSize="11" Foreground="{StaticResource TextDimBrush}" />
+                            </Border>
+                        </StackPanel>
                         <Border Grid.Column="1" Style="{StaticResource StatusPill}">
                             <TextBlock AutomationProperties.AutomationId="{Binding FileName, StringFormat='Status_{0}'}"
                                        Text="{Binding Status, Converter={StaticResource StatusToText}}"
@@ -54,6 +61,10 @@
                         <TextBlock Grid.Column="1" Text="{Binding SpeedDisplay}" Foreground="{StaticResource TextDimBrush}" FontSize="11" />
                     </Grid>
 
+                    <TextBlock Text="{Binding DestinationFolder}" ToolTip="{Binding DestinationFolder}"
+                               Foreground="{StaticResource TextDimBrush}" FontSize="11" Margin="0,2,0,0"
+                               TextTrimming="CharacterEllipsis" />
+
                     <TextBlock Text="{Binding LastError}" Foreground="{StaticResource ErrBrush}" FontSize="11"
                                Margin="0,4,0,0" TextWrapping="Wrap"
                                Visibility="{Binding LastError, Converter={StaticResource StringToVisibility}}" />
@@ -66,7 +77,9 @@
                                 Style="{StaticResource SmallButton}" Command="{Binding ResumeCommand}" Margin="0,0,6,0" />
                         <Button AutomationProperties.AutomationId="{Binding FileName, StringFormat='Cancel_{0}'}"
                                 Content="Cancel" Style="{StaticResource SmallButton}" Command="{Binding CancelCommand}" Margin="0,0,6,0" />
-                        <Button Content="Copy URL" Style="{StaticResource SmallButton}" Command="{Binding CopyUrlCommand}" />
+                        <Button Content="Copy URL" Style="{StaticResource SmallButton}" Command="{Binding CopyUrlCommand}" Margin="0,0,6,0" />
+                        <Button AutomationProperties.AutomationId="{Binding FileName, StringFormat='Rename_{0}'}"
+                                Content="Rename" Style="{StaticResource SmallButton}" Command="{Binding RenameCommand}" />
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -135,7 +148,6 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="220" />
                     <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="URL:" Foreground="{StaticResource TextDimBrush}"
                            VerticalAlignment="Center" Margin="0,0,8,0" />
@@ -147,10 +159,11 @@
                 </TextBox>
                 <TextBlock Grid.Column="2" Text="Save to:" Foreground="{StaticResource TextDimBrush}"
                            VerticalAlignment="Center" Margin="0,0,8,0" />
-                <TextBox Grid.Column="3" AutomationProperties.AutomationId="FolderTextBox"
-                         Text="{Binding NewDownloadFolder, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0" />
-                <Button Grid.Column="4" Content="Browse" Command="{Binding BrowseFolderCommand}" Margin="0,0,8,0" />
-                <Button Grid.Column="5" AutomationProperties.AutomationId="AddButton"
+                <ComboBox Grid.Column="3" AutomationProperties.AutomationId="SaveToComboBox"
+                          ItemsSource="{Binding SaveTargets}" DisplayMemberPath="Label"
+                          SelectedItem="{Binding SelectedSaveTarget}" Margin="0,0,8,0"
+                          ToolTip="Automatic picks the folder by file type once the server reports the file name." />
+                <Button Grid.Column="4" AutomationProperties.AutomationId="AddButton"
                         Content="Add" Style="{StaticResource PrimaryButton}" Command="{Binding AddDownloadCommand}" />
             </Grid>
         </Border>
@@ -243,9 +256,92 @@
                             <StackPanel Visibility="{Binding IsChecked, ElementName=GeneralNav, Converter={StaticResource BoolToVisibility}}">
                                 <TextBlock Text="General" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,16" />
 
-                                <TextBlock Text="Default download folder" Foreground="{StaticResource TextDimBrush}" Margin="0,0,0,4" />
-                                <TextBox AutomationProperties.AutomationId="DefaultFolderTextBox"
-                                         Text="{Binding Settings.DefaultDownloadFolder, UpdateSourceTrigger=PropertyChanged}" />
+                                <Border Style="{StaticResource CardBorder}" DataContext="{Binding Destinations}">
+                                    <StackPanel>
+                                        <CheckBox AutomationProperties.AutomationId="SortByTypeToggle"
+                                                  Style="{StaticResource ToggleSwitch}" Content="Sort downloads into folders by file type"
+                                                  IsChecked="{Binding SortByFileType}" />
+                                        <ItemsControl ItemsSource="{Binding Categories}" Margin="0,12,0,0">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="0,0,0,8">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="90" />
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                        </Grid.RowDefinitions>
+                                                        <TextBlock Grid.Column="0" Text="{Binding Label}" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" />
+                                                        <TextBox Grid.Column="1" AutomationProperties.AutomationId="{Binding Label, StringFormat='CategoryFolder_{0}'}"
+                                                                 Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}" />
+                                                        <Button Grid.Column="2" Content="..." Style="{StaticResource SmallButton}" Margin="6,0,0,0"
+                                                                AutomationProperties.AutomationId="{Binding Label, StringFormat='CategoryBrowse_{0}'}"
+                                                                Command="{Binding BrowseCommand}" ToolTip="Choose folder" />
+                                                        <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding ExtensionsText}"
+                                                                   Foreground="{StaticResource TextDimBrush}" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <StackPanel Orientation="Horizontal" Margin="90,2,0,0">
+                                            <Button AutomationProperties.AutomationId="EditFileTypesButton" Content="Edit file types..."
+                                                    Style="{StaticResource SmallButton}" Command="{Binding EditFileTypesCommand}" Margin="0,0,6,0" />
+                                            <Button AutomationProperties.AutomationId="ResetCategoriesButton" Content="Reset to defaults"
+                                                    Style="{StaticResource SmallButton}" Command="{Binding ResetCategoriesCommand}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Text="Custom destinations" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,12,0,2" />
+                                <TextBlock Foreground="{StaticResource TextDimBrush}" TextWrapping="Wrap" Margin="0,0,0,8"
+                                           Text="Checked top to bottom; the first matching rule wins. Unmatched files use the categories above." />
+                                <Border Style="{StaticResource CardBorder}" DataContext="{Binding Destinations}">
+                                    <StackPanel>
+                                        <TextBlock Text="No rules yet." Foreground="{StaticResource TextDimBrush}" Margin="0,0,0,8">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasRules}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <ItemsControl ItemsSource="{Binding Rules}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="0,0,0,8">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Text="{Binding Summary}" Foreground="{StaticResource TextDimBrush}" FontSize="11" TextWrapping="Wrap" />
+                                                            <TextBlock Foreground="{StaticResource TextDimBrush}" FontSize="11" TextTrimming="CharacterEllipsis">
+                                                                <Run Text="&#x2192; " /><Run Text="{Binding Folder, Mode=OneWay}" />
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                                                            <Button Content="&#x25B2;" Style="{StaticResource SmallButton}" Command="{Binding MoveUpCommand}" ToolTip="Move up" Margin="0,0,4,0"
+                                                                    AutomationProperties.AutomationId="{Binding Name, StringFormat='RuleUp_{0}'}" />
+                                                            <Button Content="&#x25BC;" Style="{StaticResource SmallButton}" Command="{Binding MoveDownCommand}" ToolTip="Move down" Margin="0,0,4,0"
+                                                                    AutomationProperties.AutomationId="{Binding Name, StringFormat='RuleDown_{0}'}" />
+                                                            <Button Content="Edit" Style="{StaticResource SmallButton}" Command="{Binding EditCommand}"
+                                                                    AutomationProperties.AutomationId="{Binding Name, StringFormat='RuleEdit_{0}'}" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <Button AutomationProperties.AutomationId="AddRuleButton" Content="Add rule..." HorizontalAlignment="Left"
+                                                Style="{StaticResource SmallButton}" Command="{Binding AddRuleCommand}" />
+                                    </StackPanel>
+                                </Border>
 
                                 <TextBlock Text="Max concurrent downloads" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
                                 <TextBox AutomationProperties.AutomationId="MaxConcurrentTextBox"
@@ -318,10 +414,24 @@
                                            Text="Updates come from GitHub Releases. Each installer is checked against the AtraTech release signature before it runs." />
                             </StackPanel>
 
-                            <Button AutomationProperties.AutomationId="SaveSettingsButton"
-                                    Content="Save Settings" Style="{StaticResource PrimaryButton}"
-                                    Command="{Binding SaveSettingsCommand}"
-                                    Margin="0,24,0,24" HorizontalAlignment="Left" />
+                            <StackPanel Orientation="Horizontal" Margin="0,24,0,24">
+                                <Button AutomationProperties.AutomationId="SaveSettingsButton"
+                                        Content="Save Settings" Style="{StaticResource PrimaryButton}"
+                                        Command="{Binding SaveSettingsCommand}" />
+                                <TextBlock AutomationProperties.AutomationId="SettingsSaveMessage" Text="{Binding SettingsSaveMessage}"
+                                           VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap" MaxWidth="380">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource OkBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SettingsSaveFailed}" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource ErrBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>

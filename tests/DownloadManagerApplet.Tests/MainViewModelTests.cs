@@ -48,8 +48,7 @@ public class MainViewModelTests : TestBase
 
     private MainViewModel NewViewModel()
     {
-        var state = new AppState();
-        state.Settings.DefaultDownloadFolder = Temp.Path;
+        var state = TestStates.InFolder(Temp.Path);
 
         var store = new JsonAppStore(Path.Combine(Temp.Path, "state.json"), NullLoggingService.Instance);
         var orchestrator = new DownloadOrchestrator(new ImmediateSuccessEngine(), NullLoggingService.Instance, () => 2, () => 3);

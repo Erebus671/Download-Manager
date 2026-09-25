@@ -13,7 +13,7 @@
     <AssemblyTitle>AtraTech Download Solutions</AssemblyTitle>
     <Company>AtraTech</Company>
     <Description>Download queue manager with resumable, retryable downloads.</Description>
-    <Version>1.1.1</Version>
+    <Version>1.2.0</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AppIconPath)' != '' And Exists('$(AppIconPath)')">

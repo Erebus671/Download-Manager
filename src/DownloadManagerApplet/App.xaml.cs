@@ -65,7 +65,8 @@ public partial class App : Application
         var appStore = new JsonAppStore(Path.Combine(appDataFolder, "state.json"), _log);
 
         _httpClient = new HttpClient();
-        var engine = new HttpDownloadEngine(_httpClient, _log);
+        var planner = new DestinationPlanner(state, _log);
+        var engine = new HttpDownloadEngine(_httpClient, _log, planner);
         var orchestrator = new DownloadOrchestrator(
             engine,
             _log,
@@ -73,7 +74,7 @@ public partial class App : Application
             () => state.Settings.MaxRetryAttempts);
 
         var updates = CreateUpdates(state, appStore, updatesFolder, out var updatesEnabled);
-        var mainViewModel = new MainViewModel(state, appStore, orchestrator, _log, updates);
+        var mainViewModel = new MainViewModel(state, appStore, orchestrator, _log, updates, planner);
         updates.InstallHandler = update => InstallUpdateAsync(update, mainViewModel, updatesFolder, logFolder);
         _updates = updates;
 
