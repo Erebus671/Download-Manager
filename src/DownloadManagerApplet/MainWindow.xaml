@@ -23,6 +23,7 @@
         <conv:StatusToResumeLabelConverter x:Key="StatusToResumeLabel" />
         <conv:LogLevelToBrushConverter x:Key="LogLevelToBrush" />
         <conv:StringToVisibilityConverter x:Key="StringToVisibility" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
         <DataTemplate x:Key="DownloadCardTemplate" DataType="{x:Type vm:DownloadItemViewModel}">
             <Border Style="{StaticResource CardBorder}">
@@ -161,12 +162,26 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Foreground="{StaticResource TextDimBrush}" FontSize="11">
                     <Run Text="{Binding Queue.Count, Mode=OneWay}" /><Run Text=" in queue &#183; " /><Run Text="{Binding History.Count, Mode=OneWay}" /><Run Text=" in history" />
                 </TextBlock>
                 <TextBlock Grid.Column="1" Foreground="{StaticResource TextDimBrush}" FontSize="11"
                            Text="{Binding Settings.DefaultDownloadFolder}" />
+                <Button Grid.Column="2" AutomationProperties.AutomationId="UpdateStatusButton" Margin="16,0,0,0"
+                        Content="{Binding Updates.StatusBarText}" Command="{Binding Updates.StatusBarCommand}"
+                        Visibility="{Binding Updates.StatusBarText, Converter={StaticResource StringToVisibility}}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource StatusBarLink}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Updates.StatusBarIsError}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource ErrBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
             </Grid>
         </Border>
 
@@ -206,33 +221,110 @@
             </TabItem>
 
             <TabItem Header="Settings">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="24" MaxWidth="480" HorizontalAlignment="Left">
-                        <TextBlock Text="Default download folder" Foreground="{StaticResource TextDimBrush}" Margin="0,0,0,4" />
-                        <TextBox AutomationProperties.AutomationId="DefaultFolderTextBox"
-                                 Text="{Binding Settings.DefaultDownloadFolder, UpdateSourceTrigger=PropertyChanged}" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="170" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
 
-                        <TextBlock Text="Max concurrent downloads" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
-                        <TextBox AutomationProperties.AutomationId="MaxConcurrentTextBox"
-                                 Text="{Binding Settings.MaxConcurrentDownloads, UpdateSourceTrigger=PropertyChanged}"
-                                 Width="80" HorizontalAlignment="Left" />
+                    <Border Grid.Column="0" Background="{StaticResource PanelBrush}"
+                            BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="0,0,1,0">
+                        <StackPanel Margin="0,16,0,0">
+                            <RadioButton x:Name="GeneralNav" AutomationProperties.AutomationId="SettingsGeneralNav"
+                                         Content="General" GroupName="SettingsNav" IsChecked="True" Style="{StaticResource SettingsNavItem}" />
+                            <RadioButton x:Name="UpdatesNav" AutomationProperties.AutomationId="SettingsUpdatesNav"
+                                         Content="Updates" GroupName="SettingsNav" Style="{StaticResource SettingsNavItem}" />
+                        </StackPanel>
+                    </Border>
 
-                        <TextBlock Text="Max retry attempts" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
-                        <TextBox AutomationProperties.AutomationId="MaxRetryTextBox"
-                                 Text="{Binding Settings.MaxRetryAttempts, UpdateSourceTrigger=PropertyChanged}"
-                                 Width="80" HorizontalAlignment="Left" />
+                    <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="24" MaxWidth="520" HorizontalAlignment="Left">
 
-                        <TextBlock Text="Minimum log level" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
-                        <ComboBox AutomationProperties.AutomationId="LogLevelComboBox"
-                                  ItemsSource="{Binding LogLevels}" SelectedItem="{Binding Settings.MinimumLogLevel}"
-                                  Width="140" HorizontalAlignment="Left" />
+                            <StackPanel Visibility="{Binding IsChecked, ElementName=GeneralNav, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="General" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,16" />
 
-                        <Button AutomationProperties.AutomationId="SaveSettingsButton"
-                                Content="Save Settings" Style="{StaticResource PrimaryButton}"
-                                Command="{Binding SaveSettingsCommand}"
-                                Margin="0,24,0,24" HorizontalAlignment="Left" />
-                    </StackPanel>
-                </ScrollViewer>
+                                <TextBlock Text="Default download folder" Foreground="{StaticResource TextDimBrush}" Margin="0,0,0,4" />
+                                <TextBox AutomationProperties.AutomationId="DefaultFolderTextBox"
+                                         Text="{Binding Settings.DefaultDownloadFolder, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <TextBlock Text="Max concurrent downloads" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
+                                <TextBox AutomationProperties.AutomationId="MaxConcurrentTextBox"
+                                         Text="{Binding Settings.MaxConcurrentDownloads, UpdateSourceTrigger=PropertyChanged}"
+                                         Width="80" HorizontalAlignment="Left" />
+
+                                <TextBlock Text="Max retry attempts" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
+                                <TextBox AutomationProperties.AutomationId="MaxRetryTextBox"
+                                         Text="{Binding Settings.MaxRetryAttempts, UpdateSourceTrigger=PropertyChanged}"
+                                         Width="80" HorizontalAlignment="Left" />
+
+                                <TextBlock Text="Minimum log level" Foreground="{StaticResource TextDimBrush}" Margin="0,16,0,4" />
+                                <ComboBox AutomationProperties.AutomationId="LogLevelComboBox"
+                                          ItemsSource="{Binding LogLevels}" SelectedItem="{Binding Settings.MinimumLogLevel}"
+                                          Width="140" HorizontalAlignment="Left" />
+                            </StackPanel>
+
+                            <StackPanel Visibility="{Binding IsChecked, ElementName=UpdatesNav, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="Updates" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,16" />
+
+                                <Border Style="{StaticResource CardBorder}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="130" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Current version" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center" />
+                                        <StackPanel Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Updates.CurrentVersion, Mode=OneWay}" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                            <Border Style="{StaticResource StatusPill}">
+                                                <TextBlock AutomationProperties.AutomationId="UpdateSummaryText" Text="{Binding Updates.StatusSummary}"
+                                                           FontSize="11" Foreground="{StaticResource TextBrush}" />
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Last checked" Foreground="{StaticResource TextDimBrush}"
+                                                   VerticalAlignment="Center" Margin="0,10,0,0" />
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Updates.LastCheckedDisplay, Mode=OneWay}"
+                                                   Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" Margin="0,10,0,0" />
+                                        <Button Grid.Row="1" Grid.Column="2" AutomationProperties.AutomationId="CheckNowButton"
+                                                Content="Check now" Style="{StaticResource SmallButton}"
+                                                Command="{Binding Updates.CheckNowCommand}" Margin="0,10,0,0" />
+                                    </Grid>
+                                </Border>
+
+                                <Border Style="{StaticResource CardBorder}">
+                                    <StackPanel>
+                                        <CheckBox x:Name="AutoCheckToggle" AutomationProperties.AutomationId="AutoCheckToggle"
+                                                  Style="{StaticResource ToggleSwitch}" Content="Check for updates automatically"
+                                                  IsChecked="{Binding Settings.CheckForUpdatesAutomatically}" />
+                                        <StackPanel Orientation="Horizontal" Margin="44,10,0,0"
+                                                    IsEnabled="{Binding IsChecked, ElementName=AutoCheckToggle}">
+                                            <TextBlock Text="How often" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center" Width="90" />
+                                            <ComboBox AutomationProperties.AutomationId="UpdateFrequencyComboBox" Width="230"
+                                                      ItemsSource="{Binding Updates.Frequencies}" DisplayMemberPath="Label" SelectedValuePath="Value"
+                                                      SelectedValue="{Binding Settings.UpdateCheckFrequency}" />
+                                        </StackPanel>
+                                        <CheckBox AutomationProperties.AutomationId="AutoDownloadToggle" Margin="0,12,0,0"
+                                                  Style="{StaticResource ToggleSwitch}" Content="Download updates automatically"
+                                                  IsChecked="{Binding Settings.DownloadUpdatesAutomatically}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Foreground="{StaticResource TextDimBrush}" TextWrapping="Wrap" Margin="2,4,0,0"
+                                           Text="Updates come from GitHub Releases. Each installer is checked against the AtraTech release signature before it runs." />
+                            </StackPanel>
+
+                            <Button AutomationProperties.AutomationId="SaveSettingsButton"
+                                    Content="Save Settings" Style="{StaticResource PrimaryButton}"
+                                    Command="{Binding SaveSettingsCommand}"
+                                    Margin="0,24,0,24" HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
             </TabItem>
         </TabControl>
 

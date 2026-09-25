@@ -15,6 +15,10 @@ public sealed class MainViewModel : ObservableObject
     private readonly DownloadOrchestrator _orchestrator;
     private readonly ILoggingService _log;
     private readonly AppState _state;
+    private readonly List<Guid> _resumeAfterUpdate = new();
+
+    private static readonly TimeSpan PendingResumeMaxAge = TimeSpan.FromHours(2);
+    private static readonly TimeSpan SuspendTimeout = TimeSpan.FromSeconds(15);
 
     private string _newDownloadUrl = string.Empty;
     private string _newDownloadFolder;
@@ -24,9 +28,15 @@ public sealed class MainViewModel : ObservableObject
     public ReadOnlyObservableCollection<LogEntry> LogEntries => _log.RecentEntries;
 
     public AppSettings Settings => _state.Settings;
+    public UpdatesViewModel? Updates { get; }
     public IReadOnlyList<LogLevelSetting> LogLevels { get; } = Enum.GetValues<LogLevelSetting>();
 
     public bool HasRestoredPendingDownloads { get; }
+
+    /// <summary>Downloads paused for an update; resumed by <see cref="ResumeAfterUpdate"/> with no prompt.</summary>
+    public bool HasDownloadsToResumeAfterUpdate => _resumeAfterUpdate.Count > 0;
+
+    public int ActiveDownloadCount => Queue.Count(v => v.Status is DownloadStatus.Downloading or DownloadStatus.Queued);
 
     public string NewDownloadUrl
     {
@@ -47,8 +57,9 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand ClearCompletedCommand { get; }
     public RelayCommand SaveSettingsCommand { get; }
 
-    public MainViewModel(AppState state, IAppStore store, DownloadOrchestrator orchestrator, ILoggingService log)
+    public MainViewModel(AppState state, IAppStore store, DownloadOrchestrator orchestrator, ILoggingService log, UpdatesViewModel? updates = null)
     {
+        Updates = updates;
         _state = state;
         _store = store;
         _orchestrator = orchestrator;
@@ -64,9 +75,8 @@ public sealed class MainViewModel : ObservableObject
 
         foreach (var item in _state.Downloads)
         {
-            // A prior run may have been closed mid-download; there is no live task to resume it,
-            // so surface it as paused rather than a stuck "Downloading" state.
-            if (item.Status == DownloadStatus.Downloading)
+            // No live task survives a restart, so running and waiting items come back as Paused.
+            if (item.Status is DownloadStatus.Downloading or DownloadStatus.Queued)
             {
                 item.Status = DownloadStatus.Paused;
             }
@@ -74,7 +84,8 @@ public sealed class MainViewModel : ObservableObject
             AddViewModelFor(item);
         }
 
-        HasRestoredPendingDownloads = _state.Downloads.Any(d => d.Status == DownloadStatus.Paused);
+        TakePendingUpdateResume();
+        HasRestoredPendingDownloads = !HasDownloadsToResumeAfterUpdate && _state.Downloads.Any(d => d.Status == DownloadStatus.Paused);
 
         _orchestrator.StateChanged += OnOrchestratorStateChanged;
     }
@@ -155,6 +166,86 @@ public sealed class MainViewModel : ObservableObject
         {
             _orchestrator.Resume(vm.Model, vm);
         }
+    }
+
+    private void TakePendingUpdateResume()
+    {
+        if (_state.Updates.PendingResume is not { } pending)
+        {
+            return;
+        }
+
+        _state.Updates.PendingResume = null;
+        var age = DateTimeOffset.Now - pending.CreatedAt;
+        if (age > PendingResumeMaxAge || age < TimeSpan.Zero)
+        {
+            _log.Warn($"Ignoring downloads paused for update {pending.TargetVersion}: recorded {age.TotalMinutes:0} min ago; asking instead");
+            return;
+        }
+
+        _resumeAfterUpdate.AddRange(pending.DownloadIds.Where(id => _state.Downloads.Any(d => d.Id == id && d.Status == DownloadStatus.Paused)));
+        _log.Info($"{_resumeAfterUpdate.Count} download(s) paused for update {pending.TargetVersion} will resume");
+    }
+
+    /// <summary>Resumes the downloads that were paused for an update install.</summary>
+    public void ResumeAfterUpdate()
+    {
+        foreach (var vm in Queue.Where(v => _resumeAfterUpdate.Contains(v.Model.Id)).ToList())
+        {
+            _orchestrator.Resume(vm.Model, vm);
+        }
+
+        _resumeAfterUpdate.Clear();
+        Persist();
+    }
+
+    /// <summary>Pauses running and queued downloads and records them for resume after the update. Returns false if downloads would not stop.</summary>
+    public async Task<bool> PrepareForUpdateAsync(Version targetVersion)
+    {
+        var ids = _state.Downloads.Where(d => d.Status is DownloadStatus.Downloading or DownloadStatus.Queued).Select(d => d.Id).ToList();
+        _log.Info($"Preparing for update {targetVersion}: pausing {ids.Count} download(s)");
+
+        if (!await _orchestrator.SuspendAsync(SuspendTimeout))
+        {
+            _log.Error("Downloads did not stop in time; update postponed");
+            CancelUpdatePreparation(ids);
+            return false;
+        }
+
+        foreach (var item in _state.Downloads.Where(d => ids.Contains(d.Id)))
+        {
+            item.Status = DownloadStatus.Paused;
+        }
+
+        _state.Updates.PendingResume = new PendingUpdateResume
+        {
+            DownloadIds = ids,
+            CreatedAt = DateTimeOffset.Now,
+            TargetVersion = targetVersion.ToString(3)
+        };
+
+        foreach (var vm in Queue.ToList())
+        {
+            vm.RefreshFromModel();
+        }
+
+        Persist();
+        return true;
+    }
+
+    /// <summary>Undoes <see cref="PrepareForUpdateAsync"/> when the update cannot start.</summary>
+    public void CancelUpdatePreparation(IReadOnlyCollection<Guid>? ids = null)
+    {
+        _orchestrator.Unsuspend();
+        var toResume = ids ?? _state.Updates.PendingResume?.DownloadIds ?? new List<Guid>();
+        _state.Updates.PendingResume = null;
+
+        foreach (var vm in Queue.Where(v => toResume.Contains(v.Model.Id) && v.Model.Status is DownloadStatus.Paused).ToList())
+        {
+            _orchestrator.Resume(vm.Model, vm);
+        }
+
+        Persist();
     }
 
     private void ClearCompleted()

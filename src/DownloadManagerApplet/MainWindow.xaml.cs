@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Shell;
+using DownloadManagerApplet.Services.Updates;
 using DownloadManagerApplet.ViewModels;
 
 namespace DownloadManagerApplet;
@@ -10,6 +11,7 @@ namespace DownloadManagerApplet;
 public partial class MainWindow : Window
 {
     private readonly ImageSource? _titleBarIcon;
+    private bool _updatePromptOpen;
 
     public MainWindow(ImageSource? titleBarIcon)
     {
@@ -108,13 +110,47 @@ public partial class MainWindow : Window
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        if (DataContext is MainViewModel viewModel && viewModel.HasRestoredPendingDownloads)
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        if (viewModel.Updates is { } updates)
+        {
+            updates.PromptRequested += update => ShowUpdatePrompt(viewModel, updates, update);
+        }
+
+        if (viewModel.HasDownloadsToResumeAfterUpdate)
+        {
+            viewModel.ResumeAfterUpdate();
+        }
+        else if (viewModel.HasRestoredPendingDownloads)
         {
             var prompt = new ResumePromptWindow(_titleBarIcon) { Owner = this };
             if (prompt.ShowDialog() == true)
             {
                 viewModel.ResumeAllCommand.Execute(null);
             }
+        }
+    }
+
+    private void ShowUpdatePrompt(MainViewModel viewModel, UpdatesViewModel updates, VerifiedUpdate update)
+    {
+        if (_updatePromptOpen)
+        {
+            return;
+        }
+
+        _updatePromptOpen = true;
+        try
+        {
+            var prompt = new UpdatePromptWindow(update, updates.CurrentVersion, viewModel.ActiveDownloadCount, _titleBarIcon) { Owner = this };
+            prompt.ShowDialog();
+            updates.OnPromptResult(update, prompt.Result);
+        }
+        finally
+        {
+            _updatePromptOpen = false;
         }
     }
 }

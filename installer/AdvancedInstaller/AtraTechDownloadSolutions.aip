@@ -13,10 +13,10 @@
     <ROW Property="ARPNOREPAIR" MultiBuildValue="DefaultBuild:1"/>
     <ROW Property="ARPPRODUCTICON" Value="DownloadManagerApplet.exe" Type="8"/>
     <ROW Property="Manufacturer" Value="AtraTech"/>
-    <ROW Property="ProductCode" Value="1033:{765FD27E-C676-4E9F-86DB-387D0DC8F63E} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{9063E37D-604E-4195-B0DD-C5FC88E80D17} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="AtraTech Download Solutions"/>
-    <ROW Property="ProductVersion" Value="1.0.0" Options="32"/>
+    <ROW Property="ProductVersion" Value="1.1.0" Options="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{D0F9F00A-C579-441D-BDA4-DDDB405D57D8}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>

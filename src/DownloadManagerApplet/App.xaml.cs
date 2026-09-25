@@ -1,8 +1,10 @@
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Windows;
 using System.Windows.Threading;
 using DownloadManagerApplet.Services;
+using DownloadManagerApplet.Services.Updates;
 using DownloadManagerApplet.ViewModels;
 
 namespace DownloadManagerApplet;
@@ -16,6 +18,8 @@ public partial class App : Application
 
     private ILoggingService? _log;
     private HttpClient? _httpClient;
+    private HttpClient? _updateHttpClient;
+    private UpdatesViewModel? _updates;
     private SingleInstanceGuard? _instanceGuard;
     private InstancePipeServer? _instanceServer;
     private MainWindow? _mainWindow;
@@ -28,15 +32,24 @@ public partial class App : Application
         var appDataFolder = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "DownloadManagerApplet");
+        var logFolder = Path.Combine(appDataFolder, "logs");
+        var updatesFolder = Path.Combine(appDataFolder, "updates");
+        var args = e.Args.ToList();
+
+        if (args.Count > 0 && args[0] == UpdateApplier.Flag)
+        {
+            RunUpdateHelper(args, logFolder);
+            return;
+        }
+
+        var afterUpdate = AfterUpdateInfo.Extract(args);
 
         var store = new JsonAppStore(Path.Combine(appDataFolder, "state.json"), NullLoggingService.Instance);
         var state = store.Load();
 
-        _log = new FileLoggingService(Path.Combine(appDataFolder, "logs"), state.Settings.MinimumLogLevel);
+        _log = new FileLoggingService(logFolder, state.Settings.MinimumLogLevel);
 
-        // JsonAppStore was constructed before the real logger existed; rebuild it now so load/save
-        // failures land in the real log rather than being silently swallowed.
-        var launchUrls = ParseLaunchUrls(e.Args, _log);
+        var launchUrls = ParseLaunchUrls(args, _log);
         if (!TryAcquirePrimary(_log))
         {
             return;
@@ -48,6 +61,7 @@ public partial class App : Application
             return;
         }
 
+        // Rebuilt with the real logger so load/save failures are not swallowed.
         var appStore = new JsonAppStore(Path.Combine(appDataFolder, "state.json"), _log);
 
         _httpClient = new HttpClient();
@@ -58,7 +72,10 @@ public partial class App : Application
             () => state.Settings.MaxConcurrentDownloads,
             () => state.Settings.MaxRetryAttempts);
 
-        var mainViewModel = new MainViewModel(state, appStore, orchestrator, _log);
+        var updates = CreateUpdates(state, appStore, updatesFolder, out var updatesEnabled);
+        var mainViewModel = new MainViewModel(state, appStore, orchestrator, _log, updates);
+        updates.InstallHandler = update => InstallUpdateAsync(update, mainViewModel, updatesFolder, logFolder);
+        _updates = updates;
 
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
@@ -74,6 +91,91 @@ public partial class App : Application
         {
             mainViewModel.AddExternalDownloads(launchUrls);
         }
+
+        if (updatesEnabled)
+        {
+            updates.Start(afterUpdate);
+        }
+    }
+
+    private static Version CurrentVersion => typeof(App).Assembly.GetName().Version ?? new Version(0, 0, 0);
+
+    private UpdatesViewModel CreateUpdates(AppState state, IAppStore appStore, string updatesFolder, out bool enabled)
+    {
+        var log = _log!;
+        var version = UpdateSignatureFormat.NormalizeVersion(CurrentVersion);
+        _updateHttpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(15) };
+        _updateHttpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("AtraTechDownloadSolutions", version));
+
+        var verifier = new UpdateSignatureVerifier(TrustedUpdateKeys.All);
+        var updates = new UpdatesViewModel(
+            state,
+            () => appStore.Save(state),
+            new GitHubReleaseSource(_updateHttpClient, "Erebus671", "Download-Manager", log),
+            new UpdateDownloader(_updateHttpClient, verifier, updatesFolder, log),
+            Version.Parse(version),
+            log,
+            TimeProvider.System);
+
+        enabled = verifier.HasTrustedKeys;
+        if (!enabled)
+        {
+            log.Warn("This build has no trusted update keys; automatic updates are disabled");
+            updates.Disable("Updates disabled in this build");
+        }
+
+        return updates;
+    }
+
+    private async Task<bool> InstallUpdateAsync(VerifiedUpdate update, MainViewModel mainViewModel, string updatesFolder, string logFolder)
+    {
+        if (!await mainViewModel.PrepareForUpdateAsync(update.Manifest.Version))
+        {
+            throw new UpdateCheckException("Downloads did not pause in time");
+        }
+
+        try
+        {
+            UpdateLauncher.StartHelper(update, updatesFolder, logFolder, _log!);
+        }
+        catch (UpdateCheckException)
+        {
+            mainViewModel.CancelUpdatePreparation();
+            throw;
+        }
+
+        _updates?.Stop();
+        Shutdown(ExitForwarded);
+        return true;
+    }
+
+    private void RunUpdateHelper(List<string> args, string logFolder)
+    {
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        var log = new FileLoggingService(logFolder, Models.LogLevelSetting.Info);
+        _log = log;
+
+        var request = UpdateApplier.ParseRequest(args);
+        if (request is null)
+        {
+            log.Error($"Update helper: invalid arguments ({args.Count})");
+            Shutdown(ExitStartupFailed);
+            return;
+        }
+
+        int code;
+        try
+        {
+            var applier = new UpdateApplier(log, new UpdateSignatureVerifier(TrustedUpdateKeys.All), CurrentVersion);
+            code = applier.Run(request);
+        }
+        catch (Exception ex)
+        {
+            log.Error("Update helper: unexpected failure", ex);
+            code = ExitStartupFailed;
+        }
+
+        Shutdown(code);
     }
 
     private bool TryAcquirePrimary(ILoggingService log)
@@ -134,7 +236,7 @@ public partial class App : Application
         return added == message.Urls.Count;
     }
 
-    private static List<string> ParseLaunchUrls(string[] args, ILoggingService log)
+    private static List<string> ParseLaunchUrls(IEnumerable<string> args, ILoggingService log)
     {
         var urls = new List<string>();
         foreach (var arg in args)
@@ -190,6 +292,7 @@ public partial class App : Application
 
         _instanceGuard?.Dispose();
         _httpClient?.Dispose();
+        _updateHttpClient?.Dispose();
         (_log as IDisposable)?.Dispose();
         base.OnExit(e);
     }

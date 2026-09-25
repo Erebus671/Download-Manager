@@ -23,6 +23,7 @@ public sealed class DownloadOrchestrator
     private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _tokens = new();
     private readonly ConcurrentDictionary<Guid, bool> _cancelRequested = new();
     private int _activeCount;
+    private volatile bool _suspended;
 
     /// <summary>Raised whenever an item's status changes, so the caller can persist state.</summary>
     public event Action? StateChanged;
@@ -74,6 +75,33 @@ public sealed class DownloadOrchestrator
         }
     }
 
+    /// <summary>Pauses every running download and holds queued ones; waits until none are active. Returns false on timeout.</summary>
+    public async Task<bool> SuspendAsync(TimeSpan timeout)
+    {
+        _suspended = true;
+        foreach (var (id, cts) in _tokens)
+        {
+            _cancelRequested[id] = false;
+            cts.Cancel();
+        }
+
+        var deadline = DateTime.UtcNow + timeout;
+        while (Volatile.Read(ref _activeCount) > 0 || !_tokens.IsEmpty)
+        {
+            if (DateTime.UtcNow >= deadline)
+            {
+                _log.Warn($"Suspend timed out with {Volatile.Read(ref _activeCount)} download(s) still active");
+                return false;
+            }
+
+            await Task.Delay(50).ConfigureAwait(false);
+        }
+
+        return true;
+    }
+
+    public void Unsuspend() => _suspended = false;
+
     public void Resume(DownloadItem item, IProgress<DownloadProgress> progress)
     {
         if (item.Status is DownloadStatus.Paused or DownloadStatus.Error or DownloadStatus.Canceled)
@@ -86,11 +114,27 @@ public sealed class DownloadOrchestrator
 
     private async Task ProcessItemAsync(DownloadItem item, IProgress<DownloadProgress> progress)
     {
-        await AcquireSlotAsync().ConfigureAwait(false);
+        if (!await AcquireSlotAsync().ConfigureAwait(false))
+        {
+            HoldForSuspend(item);
+            return;
+        }
+
         try
         {
+            if (_suspended)
+            {
+                HoldForSuspend(item);
+                return;
+            }
+
             using var cts = new CancellationTokenSource();
             _tokens[item.Id] = cts;
+            if (_suspended)
+            {
+                // SuspendAsync may have enumerated _tokens before this registration.
+                cts.Cancel();
+            }
 
             item.Status = DownloadStatus.Downloading;
             StateChanged?.Invoke();
@@ -147,13 +191,26 @@ public sealed class DownloadOrchestrator
         }
     }
 
-    private async Task AcquireSlotAsync()
+    private void HoldForSuspend(DownloadItem item)
+    {
+        item.Status = DownloadStatus.Paused;
+        _log.Debug($"{item.FileName}: held as Paused while downloads are suspended");
+        StateChanged?.Invoke();
+    }
+
+    /// <summary>False when downloads were suspended while waiting; no slot is held in that case.</summary>
+    private async Task<bool> AcquireSlotAsync()
     {
         while (true)
         {
+            if (_suspended)
+            {
+                return false;
+            }
+
             if (Interlocked.Increment(ref _activeCount) <= Math.Max(1, _getMaxConcurrent()))
             {
-                return;
+                return true;
             }
 
             Interlocked.Decrement(ref _activeCount);

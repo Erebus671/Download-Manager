@@ -13,7 +13,7 @@
     <AssemblyTitle>AtraTech Download Solutions</AssemblyTitle>
     <Company>AtraTech</Company>
     <Description>Download queue manager with resumable, retryable downloads.</Description>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AppIconPath)' != '' And Exists('$(AppIconPath)')">
@@ -24,6 +24,10 @@
     <Warning Text="AppIconPath '$(AppIconPath)' not found; building with the default icon." />
   </Target>
   
+  <ItemGroup>
+    <InternalsVisibleTo Include="DownloadManagerApplet.Tests" />
+  </ItemGroup>
+
   <!--
     No NuGet package references: this machine's only configured source is the offline
     Visual Studio package cache, which doesn't carry CommunityToolkit.Mvvm or Serilog.
