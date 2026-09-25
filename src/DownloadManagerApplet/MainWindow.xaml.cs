@@ -71,6 +71,18 @@ public partial class MainWindow : Window
         Marshal.StructureToPtr(mmi, lParam, true);
     }
 
+    /// <summary>Restore and focus; relies on the caller having granted AllowSetForegroundWindow.</summary>
+    public void BringToFront()
+    {
+        if (WindowState == WindowState.Minimized)
+        {
+            SystemCommands.RestoreWindow(this);
+        }
+
+        Show();
+        Activate();
+    }
+
     private void MinimizeButton_Click(object sender, RoutedEventArgs e) => SystemCommands.MinimizeWindow(this);
 
     private void MaximizeRestoreButton_Click(object sender, RoutedEventArgs e)

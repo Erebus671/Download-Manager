@@ -35,6 +35,17 @@ public class MainViewModelTests : TestBase
         Assert.Empty(viewModel.Queue);
     }
 
+    [Fact]
+    public void AddExternalDownloads_QueuesValidUrlsOnly()
+    {
+        var viewModel = NewViewModel();
+
+        var added = viewModel.AddExternalDownloads(["https://example.com/a.zip", "ftp://example.com/b.zip", "garbage"]);
+
+        Assert.Equal(1, added);
+        Assert.Single(viewModel.Queue.Concat(viewModel.History));
+    }
+
     private MainViewModel NewViewModel()
     {
         var state = new AppState();

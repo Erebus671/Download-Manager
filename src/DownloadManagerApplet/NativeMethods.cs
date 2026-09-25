@@ -18,6 +18,12 @@ internal static class NativeMethods
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern bool DestroyIcon(IntPtr hIcon);
 
+    [DllImport("kernel32.dll", SetLastError = true)]
+    internal static extern bool GetNamedPipeServerProcessId(Microsoft.Win32.SafeHandles.SafePipeHandle pipe, out uint serverProcessId);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern bool AllowSetForegroundWindow(uint processId);
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct POINT
     {

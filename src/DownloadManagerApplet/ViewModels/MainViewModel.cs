@@ -81,14 +81,37 @@ public sealed class MainViewModel : ObservableObject
 
     private void AddDownload()
     {
-        var url = NewDownloadUrl.Trim();
+        var folder = string.IsNullOrWhiteSpace(NewDownloadFolder) ? Settings.DefaultDownloadFolder : NewDownloadFolder;
+        if (TryAddDownload(NewDownloadUrl, folder))
+        {
+            NewDownloadUrl = string.Empty;
+        }
+    }
+
+    /// <summary>Queues URLs handed over by another process into the default folder. Returns the number queued.</summary>
+    public int AddExternalDownloads(IEnumerable<string> urls)
+    {
+        var added = 0;
+        foreach (var url in urls)
+        {
+            if (TryAddDownload(url, Settings.DefaultDownloadFolder))
+            {
+                added++;
+            }
+        }
+
+        return added;
+    }
+
+    private bool TryAddDownload(string rawUrl, string folder)
+    {
+        var url = rawUrl.Trim();
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {
             _log.Warn($"Not a valid http(s) URL: '{url}'");
-            return;
+            return false;
         }
 
-        var folder = string.IsNullOrWhiteSpace(NewDownloadFolder) ? Settings.DefaultDownloadFolder : NewDownloadFolder;
         var fileName = MakeUniqueFileName(folder, DeriveFileName(uri));
 
         var item = new DownloadItem
@@ -102,8 +125,7 @@ public sealed class MainViewModel : ObservableObject
         var vm = AddViewModelFor(item);
         _orchestrator.Enqueue(item, vm);
         Persist();
-
-        NewDownloadUrl = string.Empty;
+        return true;
     }
 
     private void BrowseFolder()
