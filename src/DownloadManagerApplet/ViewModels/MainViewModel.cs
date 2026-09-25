@@ -30,6 +30,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly AppState _state;
     private readonly List<Guid> _resumeAfterUpdate = new();
     private readonly DestinationPlanner _planner;
+    private readonly Func<Dispatcher?> _uiDispatcher;
     private DispatcherTimer? _saveMessageTimer;
 
     private static readonly TimeSpan PendingResumeMaxAge = TimeSpan.FromHours(2);
@@ -89,7 +90,7 @@ public sealed class MainViewModel : ObservableObject
             }
 
             // From the ComboBox: let it finish its selection change before the dialog opens.
-            var dispatcher = Application.Current?.Dispatcher;
+            var dispatcher = _uiDispatcher();
             if (dispatcher is not null && dispatcher.CheckAccess())
             {
                 dispatcher.BeginInvoke(ChooseSaveFolder);
@@ -120,14 +121,17 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand ClearCompletedCommand { get; }
     public RelayCommand SaveSettingsCommand { get; }
 
+    /// <param name="uiDispatcher">Where UI work is marshaled; defaults to the application's dispatcher. Tests pass one returning null to run inline.</param>
     public MainViewModel(
         AppState state,
         IAppStore store,
         DownloadOrchestrator orchestrator,
         ILoggingService log,
         UpdatesViewModel? updates = null,
-        DestinationPlanner? planner = null)
+        DestinationPlanner? planner = null,
+        Func<Dispatcher?>? uiDispatcher = null)
     {
+        _uiDispatcher = uiDispatcher ?? (() => Application.Current?.Dispatcher);
         Updates = updates;
         _state = state;
         _store = store;
@@ -439,7 +443,7 @@ public sealed class MainViewModel : ObservableObject
         SettingsSaveFailed = failed;
         SettingsSaveMessage = message;
 
-        if (Application.Current?.Dispatcher is not { } dispatcher || !dispatcher.CheckAccess())
+        if (_uiDispatcher() is not { } dispatcher || !dispatcher.CheckAccess())
         {
             return;
         }
@@ -486,7 +490,7 @@ public sealed class MainViewModel : ObservableObject
             Persist();
         }
 
-        var dispatcher = Application.Current?.Dispatcher;
+        var dispatcher = _uiDispatcher();
         if (dispatcher is not null && !dispatcher.CheckAccess())
         {
             dispatcher.BeginInvoke(Reconcile);

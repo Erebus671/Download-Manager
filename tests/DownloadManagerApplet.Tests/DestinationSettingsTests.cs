@@ -24,7 +24,7 @@ public class DestinationSettingsTests : TestBase
     public void SaveSettings_ReportsWriteFailure()
     {
         var state = TestStates.InFolder(Temp.Path);
-        var vm = new MainViewModel(state, new FailingStore(), NewOrchestrator(), NullLoggingService.Instance);
+        var vm = new MainViewModel(state, new FailingStore(), NewOrchestrator(), NullLoggingService.Instance, uiDispatcher: () => null);
 
         vm.SaveSettingsCommand.Execute(null);
 
@@ -215,7 +215,7 @@ public class DestinationSettingsTests : TestBase
     {
         state = TestStates.InFolder(Temp.Path);
         var store = new JsonAppStore(Path.Combine(Temp.Path, "state.json"), NullLoggingService.Instance);
-        return new MainViewModel(state, store, NewOrchestrator(), NullLoggingService.Instance);
+        return new MainViewModel(state, store, NewOrchestrator(), NullLoggingService.Instance, uiDispatcher: () => null);
     }
 
     private static DownloadOrchestrator NewOrchestrator() =>
