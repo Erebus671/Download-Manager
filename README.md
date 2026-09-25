@@ -71,7 +71,7 @@ Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) on
 dotnet build src/DownloadManagerApplet/DownloadManagerApplet.csproj
 ```
 
-The test project (`tests/`) uses the DotNetTestKit package from GitHub Packages. Restoring it needs a GitHub personal access token with `read:packages` scope, registered as the `GitHubPackages` NuGet source credential. After that, `dotnet test DownloadManagerApplet.sln` runs the suite.
+The test project (`tests/`) is maintainer-only. It depends on a private package, so it won't restore outside the maintainer's environment. Build the app project directly as shown above.
 
 To publish the app with a custom icon, pass the path to your `.ico` file. Without it, the app uses the default Windows icon.
 
