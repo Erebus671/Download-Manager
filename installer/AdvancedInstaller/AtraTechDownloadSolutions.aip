@@ -47,7 +47,7 @@
     <ROW Component="ProductInformation" ComponentId="{B5BB1469-A2E8-4E9E-9F08-B6EFC285AF71}" Directory_="APPDIR" Attributes="4" KeyPath="Version"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatsComponent">
-    <ROW Feature="DesktopShortcut" Title="DesktopShortcut" Description="Create a Desktop shortcut" Display="3" Level="1" Directory_="APPDIR" Attributes="0"/>
+    <ROW Feature="DesktopShortcut" Title="DesktopShortcut" Description="Create a Desktop shortcut" Display="3" Level="1" Attributes="0"/>
     <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="1" Level="1" Directory_="APPDIR" Attributes="0"/>
     <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
   </COMPONENT>
@@ -114,7 +114,8 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiControlConditionComponent">
     <ROW Dialog_="ShortcutsDlg" Control_="StartupShorcutsCheckBox" Action="Hide" Condition="(Not Installed)"/>
-    <ATTRIBUTE name="DeletedRows" value="ShortcutsDlg#StartupShorcutsCheckBox#Show#(Not Installed)"/>
+    <ROW Dialog_="ShortcutsDlg" Control_="PinToTaskbarShortcutsCheckBox" Action="Hide" Condition="(Not Installed)"/>
+    <ATTRIBUTE name="DeletedRows" value="ShortcutsDlg#PinToTaskbarShortcutsCheckBox#Hide#(Not Installed)@ShortcutsDlg#StartupShorcutsCheckBox#Show#(Not Installed)"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiControlEventComponent">
     <ROW Dialog_="WelcomeDlg" Control_="Next" Event="NewDialog" Argument="FolderDlg" Condition="AI_INSTALL" Ordering="1"/>
