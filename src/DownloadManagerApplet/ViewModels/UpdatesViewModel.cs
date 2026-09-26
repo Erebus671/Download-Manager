@@ -77,6 +77,8 @@ public sealed class UpdatesViewModel : ObservableObject
 
     public string CurrentVersion => UpdateSignatureFormat.NormalizeVersion(_currentVersion);
 
+    internal ILoggingService Log => _log;
+
     public IReadOnlyList<UpdateFrequencyOption> Frequencies { get; } =
     [
         new(UpdateCheckFrequency.LaunchAndDaily, "At launch and every 24 hours"),

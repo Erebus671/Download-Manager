@@ -23,9 +23,9 @@
             <Border Background="{StaticResource PanelAltBrush}" BorderBrush="{StaticResource AppBorderBrush}"
                     BorderThickness="1" Padding="10,8">
                 <StackPanel>
-                    <TextBlock Text="What's new" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,4" />
-                    <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
-                        <TextBlock x:Name="NotesText" Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" />
+                    <TextBlock x:Name="NotesLabel" Text="What's new" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,4" />
+                    <ScrollViewer MaxHeight="260" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="NotesPanel" AutomationProperties.AutomationId="UpdateNotesPanel" />
                     </ScrollViewer>
                 </StackPanel>
             </Border>

@@ -159,7 +159,7 @@ public partial class MainWindow : Window
         _updatePromptOpen = true;
         try
         {
-            var prompt = new UpdatePromptWindow(update, updates.CurrentVersion, viewModel.ActiveDownloadCount, _titleBarIcon) { Owner = this };
+            var prompt = new UpdatePromptWindow(update, updates.CurrentVersion, viewModel.ActiveDownloadCount, _titleBarIcon, updates.Log) { Owner = this };
             prompt.ShowDialog();
             updates.OnPromptResult(update, prompt.Result);
         }
