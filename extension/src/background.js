@@ -6,8 +6,10 @@ const HOST = 'com.atratech.downloadsolutions';
 const CONFIG_MAX_AGE_MS = 60 * 1000;
 const HOST_MISSING_RETRY_MS = 60 * 1000;
 const REPLY_TIMEOUT_MS = 25 * 1000;
-const HELLO_ALARM = 'hello';
-const HELLO_PERIOD_MINUTES = 12 * 60;
+const POLL_ALARM = 'hello';
+const POLL_PERIOD_MINUTES = 1;
+// Keep under the app's ConnectedWindow (BrowserIntegrationViewModel).
+const HEALTHY_POLL_MS = 5 * 60 * 1000;
 const IS_FIREFOX = typeof globalThis.browser !== 'undefined' && typeof globalThis.browser.runtime?.getBrowserInfo === 'function';
 
 const inFlight = new Set();
@@ -208,13 +210,30 @@ async function hello() {
   await send('Hello');
 }
 
+// Checks every minute while the host is missing, not answering, or the app is closed (so the app sees this
+// browser soon after it starts); otherwise every HEALTHY_POLL_MS. Any request counts as a check.
+async function poll() {
+  const state = await loadState();
+  const healthy = !state.hostMissing && !state.notResponding && state.appRunning !== false;
+  if (healthy && Date.now() - (state.checkedAt ?? 0) < HEALTHY_POLL_MS) return;
+  await hello();
+}
+
+// Alarms survive worker restarts but not every upgrade path, so re-check on each start.
+async function ensurePollAlarm() {
+  const existing = await api.alarms.get(POLL_ALARM);
+  if (existing?.periodInMinutes !== POLL_PERIOD_MINUTES) {
+    await api.alarms.create(POLL_ALARM, { periodInMinutes: POLL_PERIOD_MINUTES });
+  }
+}
+
 api.downloads.onCreated.addListener(item => { onCreated(item).catch(err => console.error('Download Solutions:', err)); });
 api.runtime.onStartup.addListener(() => { hello(); });
-api.runtime.onInstalled.addListener(() => {
-  api.alarms.create(HELLO_ALARM, { periodInMinutes: HELLO_PERIOD_MINUTES });
-  hello();
+api.runtime.onInstalled.addListener(() => { hello(); });
+api.alarms.onAlarm.addListener(alarm => {
+  if (alarm.name === POLL_ALARM) poll().catch(err => console.error('Download Solutions:', err));
 });
-api.alarms.onAlarm.addListener(alarm => { if (alarm.name === HELLO_ALARM) hello(); });
+ensurePollAlarm().catch(err => console.error('Download Solutions: could not schedule checks:', err));
 
 // Popup and options page requests.
 api.runtime.onMessage.addListener((message, sender, sendResponse) => {

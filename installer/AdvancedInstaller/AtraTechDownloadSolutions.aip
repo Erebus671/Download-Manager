@@ -41,6 +41,7 @@
     <ROW Component="AI_SHORTCUTSREG" ComponentId="{A4FE4020-F61A-4D40-BF4D-12BEBB4E386A}" Directory_="APPDIR" Attributes="4" KeyPath="AI_SHORTCUTSREG" Options="1"/>
     <ROW Component="APPDIR" ComponentId="{ABBD95F9-F7CC-45F0-B064-B1969C7EA8F7}" Directory_="APPDIR" Attributes="0"/>
     <ROW Component="DesktopShortcutInstalled" ComponentId="{EE06032A-E623-4ADE-A603-015946A1F9B0}" Directory_="APPDIR" Attributes="4" KeyPath="DesktopShortcutInstalled"/>
+    <ROW Component="DownloadManagerApplet.NativeHost.exe" ComponentId="{316A257E-C525-439D-A322-3FE9C77B1777}" Directory_="APPDIR" Attributes="256" KeyPath="DownloadManagerApplet.NativeHost.exe"/>
     <ROW Component="DownloadManagerApplet.deps.json" ComponentId="{4F04829B-EE5F-4BF7-8F9A-A02450572A22}" Directory_="APPDIR" Attributes="0" KeyPath="DownloadManagerApplet.deps.json" Type="0"/>
     <ROW Component="DownloadManagerApplet.dll" ComponentId="{5691F023-897D-4097-8511-F6CE0C8FF5E3}" Directory_="APPDIR" Attributes="256" KeyPath="DownloadManagerApplet.dll"/>
     <ROW Component="DownloadManagerApplet.exe" ComponentId="{A7F9D1F1-332D-42B1-88B9-6169068E59EB}" Directory_="APPDIR" Attributes="256" KeyPath="DownloadManagerApplet.exe"/>
@@ -56,6 +57,7 @@
     <ROW File="DownloadManagerApplet.dll" Component_="DownloadManagerApplet.dll" FileName="DOWNLO~1.DLL|DownloadManagerApplet.dll" Version="65535.65535.65535.65535" Attributes="0" SourcePath="..\..\publish\win-x64\DownloadManagerApplet.dll" SelfReg="false"/>
     <ROW File="DownloadManagerApplet.deps.json" Component_="DownloadManagerApplet.deps.json" FileName="DOWNLO~1.JSO|DownloadManagerApplet.deps.json" Version="65535.65535.65535.65535" Attributes="0" SourcePath="..\..\publish\win-x64\DownloadManagerApplet.deps.json" SelfReg="false"/>
     <ROW File="DownloadManagerApplet.runtimeconfig.json" Component_="DownloadManagerApplet.deps.json" FileName="DOWNLO~2.JSO|DownloadManagerApplet.runtimeconfig.json" Version="65535.65535.65535.65535" Attributes="0" SourcePath="..\..\publish\win-x64\DownloadManagerApplet.runtimeconfig.json" SelfReg="false"/>
+    <ROW File="DownloadManagerApplet.NativeHost.exe" Component_="DownloadManagerApplet.NativeHost.exe" FileName="DOWNLO~2.EXE|DownloadManagerApplet.NativeHost.exe" Version="65535.65535.65535.65535" Attributes="0" SourcePath="..\..\publish\win-x64\DownloadManagerApplet.NativeHost.exe" SelfReg="false" DigSign="true"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.AiPersistentPropComponent">
     <ROW Property="AI_SHORTCUTSREG" Registry="AI_SHORTCUTSREG" HklmSearch="AI_SHORTCUTSREG" HkcuSearch="AI_SHORTCUTSREG_1"/>
@@ -175,6 +177,7 @@
     <ROW Action="AI_ResolveKnownFolders" Type="1" Source="aicustact.dll" Target="AI_ResolveKnownFolders"/>
     <ROW Action="AI_SHOW_LOG" Type="65" Source="aicustact.dll" Target="LaunchLogFile" WithoutSeq="true"/>
     <ROW Action="AI_STORE_LOCATION" Type="51" Source="ARPINSTALLLOCATION" Target="[APPDIR]"/>
+    <ROW Action="UnregisterBrowserConnector" Type="1106" Source="DownloadManagerApplet.exe" Target="--unregister-browser"/>
     <ROW Action="SET_APPDIR" Type="307" Source="APPDIR" Target="[ProgramFilesFolder][Manufacturer]\[ProductName]"/>
     <ROW Action="SET_SHORTCUTDIR" Type="307" Source="SHORTCUTDIR" Target="[ProgramMenuFolder][ProductName]"/>
     <ROW Action="SET_TARGETDIR_TO_APPDIR" Type="51" Source="TARGETDIR" Target="[APPDIR]"/>
@@ -188,6 +191,7 @@
     <ROW Feature_="MainFeature" Component_="AI_ExePath"/>
     <ROW Feature_="DesktopShortcut" Component_="DesktopShortcutInstalled"/>
     <ROW Feature_="MainFeature" Component_="AI_SHORTCUTSREG"/>
+    <ROW Feature_="MainFeature" Component_="DownloadManagerApplet.NativeHost.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="DownloadManagerApplet.exe" SourcePath="..\..\..\App Icons\Download Manager\.ico resizes\atratechdownlaoder.ico" Index="0"/>
@@ -214,6 +218,7 @@
     <ROW Action="AI_DELETE_SHORTCUTS" Condition="NOT (REMOVE=&quot;ALL&quot;)" Sequence="1401"/>
     <ROW Action="AI_DEL_EMPTY_SHORTCUTDIR" Condition="NOT (REMOVE=&quot;ALL&quot;)" Sequence="6402"/>
     <ROW Action="AI_DATA_SETTER_1" Condition="NOT (REMOVE=&quot;ALL&quot;)" Sequence="6401"/>
+    <ROW Action="UnregisterBrowserConnector" Condition="(REMOVE=&quot;ALL&quot;) AND (NOT UPGRADINGPRODUCTCODE)" Sequence="1605"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
     <ROW Action="AI_PRESERVE_INSTALL_TYPE" Sequence="199"/>

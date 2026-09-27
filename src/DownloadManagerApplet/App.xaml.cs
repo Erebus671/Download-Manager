@@ -21,6 +21,7 @@ public partial class App : Application
     private ILoggingService? _log;
     private HttpClient? _httpClient;
     private HttpClient? _updateHttpClient;
+    private DispatcherTimer? _browserStatusTimer;
     private UpdatesViewModel? _updates;
     private SingleInstanceGuard? _instanceGuard;
     private InstancePipeServer? _instanceServer;
@@ -41,6 +42,12 @@ public partial class App : Application
         if (args.Count > 0 && args[0] == UpdateApplier.Flag)
         {
             RunUpdateHelper(args, logFolder);
+            return;
+        }
+
+        if (args.Count > 0 && args[0] == NativeHostRegistration.UnregisterFlag)
+        {
+            RunUnregisterBrowser(appDataFolder, logFolder);
             return;
         }
 
@@ -141,11 +148,7 @@ public partial class App : Application
     private BrowserIntegrationService CreateBrowserIntegration(AppState state, IAppStore appStore, MainViewModel mainViewModel, string appDataFolder)
     {
         var log = _log!;
-        var registration = new NativeHostRegistration(
-            Registry.CurrentUser,
-            Path.Combine(appDataFolder, "NativeMessaging"),
-            Path.Combine(AppContext.BaseDirectory, NativeHostRegistration.HostExeName),
-            log);
+        var registration = CreateHostRegistration(appDataFolder, log);
 
         // Re-register each start so an update or moved install self-heals.
         if (state.Settings.BrowserIntegration.Enabled)
@@ -174,6 +177,14 @@ public partial class App : Application
             UpdateSignatureFormat.NormalizeVersion(CurrentVersion));
         service.ConnectionsChanged += browserVm.RefreshConnections;
         service.SettingsChanged += browserVm.RefreshFromSettings;
+
+        // Ages rows to "Not connected" when a browser stops checking in, and picks up connector changes made outside the app.
+        _browserStatusTimer = new DispatcherTimer(BrowserIntegrationViewModel.StatusRefreshInterval, DispatcherPriority.Background, (_, _) =>
+        {
+            browserVm.RefreshConnections();
+            browserVm.RefreshHostStatus();
+        }, Dispatcher);
+        _browserStatusTimer.Start();
         return service;
     }
 
@@ -227,6 +238,33 @@ public partial class App : Application
 
         Shutdown(code);
     }
+
+    /// <summary>Uninstaller entry point: removes this user's browser connector registration, then exits without UI.</summary>
+    private void RunUnregisterBrowser(string appDataFolder, string logFolder)
+    {
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        var log = new FileLoggingService(logFolder, Models.LogLevelSetting.Info);
+        _log = log;
+
+        int code;
+        try
+        {
+            code = CreateHostRegistration(appDataFolder, log).Unregister() ? 0 : ExitStartupFailed;
+        }
+        catch (Exception ex)
+        {
+            log.Error("Unregister browser connector: unexpected failure", ex);
+            code = ExitStartupFailed;
+        }
+
+        Shutdown(code);
+    }
+
+    private static NativeHostRegistration CreateHostRegistration(string appDataFolder, ILoggingService log) => new(
+        Registry.CurrentUser,
+        Path.Combine(appDataFolder, "NativeMessaging"),
+        Path.Combine(AppContext.BaseDirectory, NativeHostRegistration.HostExeName),
+        log);
 
     private bool TryAcquirePrimary(ILoggingService log)
     {
@@ -340,6 +378,7 @@ public partial class App : Application
             Task.Run(() => server.DisposeAsync().AsTask()).GetAwaiter().GetResult();
         }
 
+        _browserStatusTimer?.Stop();
         _instanceGuard?.Dispose();
         _httpClient?.Dispose();
         _updateHttpClient?.Dispose();

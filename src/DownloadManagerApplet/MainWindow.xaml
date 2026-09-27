@@ -253,7 +253,7 @@
                             <RadioButton x:Name="UpdatesNav" AutomationProperties.AutomationId="SettingsUpdatesNav"
                                          Content="Updates" GroupName="SettingsNav" Style="{StaticResource SettingsNavItem}" />
                             <RadioButton x:Name="BrowserNav" AutomationProperties.AutomationId="SettingsBrowserNav"
-                                         Content="Browser integration" GroupName="SettingsNav" Style="{StaticResource SettingsNavItem}" />
+                                         Content="Browser Integration" GroupName="SettingsNav" Style="{StaticResource SettingsNavItem}" />
                         </StackPanel>
                     </Border>
 
@@ -423,10 +423,11 @@
 
                             <StackPanel Visibility="{Binding IsChecked, ElementName=BrowserNav, Converter={StaticResource BoolToVisibility}}"
                                         DataContext="{Binding BrowserIntegration}">
-                                <TextBlock Text="Browser integration" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,16" />
+                                <TextBlock Text="Browser Integration" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,16" />
 
                                 <Border Style="{StaticResource CardBorder}">
                                     <StackPanel>
+                                        <TextBlock Text="Turn on Browser Integration" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,8" />
                                         <CheckBox AutomationProperties.AutomationId="BrowserEnabledToggle"
                                                   Style="{StaticResource ToggleSwitch}" Content="Take over large downloads from my browsers"
                                                   IsChecked="{Binding Enabled}" />

@@ -76,7 +76,11 @@ public sealed class ExcludedSiteRow
 /// <summary>Settings > Browser integration. Edits the live settings; the shared Save Settings button persists them.</summary>
 public sealed class BrowserIntegrationViewModel : ObservableObject
 {
-    public static readonly TimeSpan ConnectedWindow = TimeSpan.FromHours(24);
+    /// <summary>The extension checks in at least every 5 minutes while its browser runs (background.js HEALTHY_POLL_MS).</summary>
+    public static readonly TimeSpan ConnectedWindow = TimeSpan.FromMinutes(15);
+
+    /// <summary>How often the page re-evaluates connection ages and the connector registration.</summary>
+    public static readonly TimeSpan StatusRefreshInterval = TimeSpan.FromSeconds(30);
     private const long BytesPerMegabyte = 1024 * 1024;
 
     private readonly AppState _state;

@@ -199,8 +199,8 @@ public class BrowserIntegrationServiceTests : TestBase
     [Fact]
     public void ViewModel_ConnectionStates()
     {
-        _state.BrowserConnections.Add(new BrowserConnection { Browser = "Chrome", ExtensionVersion = "1.3.0", LastSeen = _now.AddHours(-2) });
-        _state.BrowserConnections.Add(new BrowserConnection { Browser = "Firefox", LastSeen = _now.AddDays(-3) });
+        _state.BrowserConnections.Add(new BrowserConnection { Browser = "Chrome", ExtensionVersion = "1.3.0", LastSeen = _now.AddMinutes(-5) });
+        _state.BrowserConnections.Add(new BrowserConnection { Browser = "Firefox", LastSeen = _now.AddMinutes(-20) });
 
         var vm = new BrowserIntegrationViewModel(_state, null, NullLoggingService.Instance, () => _now, _ => { });
 
@@ -209,6 +209,21 @@ public class BrowserIntegrationServiceTests : TestBase
         Assert.Equal(BrowserRowState.NotConnected, vm.Browsers[2].State);
         Assert.True(vm.Browsers[1].ShowGetExtension);
         Assert.False(vm.Browsers[0].ShowGetExtension);
+    }
+
+    [Fact]
+    public void ViewModel_RefreshAgesRowWhenCheckInsStop()
+    {
+        var clock = _now;
+        _state.BrowserConnections.Add(new BrowserConnection { Browser = "Edge", ExtensionVersion = "1.3.0", LastSeen = _now });
+        var vm = new BrowserIntegrationViewModel(_state, null, NullLoggingService.Instance, () => clock, _ => { });
+        Assert.Equal(BrowserRowState.Connected, vm.Browsers[1].State);
+
+        clock = _now + BrowserIntegrationViewModel.ConnectedWindow + TimeSpan.FromSeconds(1);
+        vm.RefreshConnections();
+
+        Assert.Equal(BrowserRowState.NotConnected, vm.Browsers[1].State);
+        Assert.True(vm.Browsers[1].ShowGetExtension);
     }
 
     [Theory]
@@ -310,6 +325,54 @@ public class BrowserIntegrationServiceTests : TestBase
             new NativeHostRegistration(root, folder, hostExe, NullLoggingService.Instance).Register();
 
             Assert.False(new NativeHostRegistration(root, folder, movedExe, NullLoggingService.Instance).GetStatus().Registered);
+        }
+        finally
+        {
+            Registry.CurrentUser.DeleteSubKeyTree(keyPath, throwOnMissingSubKey: false);
+        }
+    }
+
+    [Fact]
+    public void Unregister_RemovesOnlyOurKeysAndManifests()
+    {
+        var hostExe = Path.Combine(Temp.Path, NativeHostRegistration.HostExeName);
+        File.WriteAllText(hostExe, "stub");
+        var keyPath = $@"Software\AtraTech.Tests\{Guid.NewGuid():N}";
+        try
+        {
+            using var root = Registry.CurrentUser.CreateSubKey(keyPath);
+            var folder = Path.Combine(Temp.Path, "NativeMessaging");
+            var registration = new NativeHostRegistration(root, folder, hostExe, NullLoggingService.Instance);
+            Assert.Null(registration.Register());
+            using (var other = root.CreateSubKey(@"Software\Google\Chrome\NativeMessagingHosts\com.other.host"))
+            {
+                other.SetValue(string.Empty, "other.json");
+            }
+
+            Assert.True(registration.Unregister());
+
+            Assert.Null(root.OpenSubKey($@"Software\Google\Chrome\NativeMessagingHosts\{BrowserProtocol.HostName}"));
+            Assert.Null(root.OpenSubKey($@"Software\Mozilla\NativeMessagingHosts\{BrowserProtocol.HostName}"));
+            Assert.NotNull(root.OpenSubKey(@"Software\Google\Chrome\NativeMessagingHosts\com.other.host"));
+            Assert.False(Directory.Exists(folder));
+            Assert.False(registration.GetStatus().Registered);
+        }
+        finally
+        {
+            Registry.CurrentUser.DeleteSubKeyTree(keyPath, throwOnMissingSubKey: false);
+        }
+    }
+
+    [Fact]
+    public void Unregister_NothingRegistered_Succeeds()
+    {
+        var keyPath = $@"Software\AtraTech.Tests\{Guid.NewGuid():N}";
+        try
+        {
+            using var root = Registry.CurrentUser.CreateSubKey(keyPath);
+            var registration = new NativeHostRegistration(root, Path.Combine(Temp.Path, "nm"), Path.Combine(Temp.Path, "missing.exe"), NullLoggingService.Instance);
+
+            Assert.True(registration.Unregister());
         }
         finally
         {

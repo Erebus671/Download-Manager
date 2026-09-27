@@ -15,6 +15,9 @@ public sealed class NativeHostRegistration
 {
     public const string HostExeName = "DownloadManagerApplet.NativeHost.exe";
 
+    /// <summary>Command-line flag the uninstaller passes to the app to run <see cref="Unregister"/>.</summary>
+    public const string UnregisterFlag = "--unregister-browser";
+
     /// <summary>HKCU paths the browsers read. Opera and Vivaldi read Chrome's key.</summary>
     private static readonly (string Browser, string KeyPath, bool Firefox)[] Targets =
     [
@@ -71,6 +74,56 @@ public sealed class NativeHostRegistration
             _log.Error("Could not register the native host", ex);
             return $"Could not register the browser connector: {ex.Message}";
         }
+    }
+
+    /// <summary>Removes this user's host keys and manifests. Run by the uninstaller; best effort, returns false if anything was left.</summary>
+    public bool Unregister()
+    {
+        var clean = true;
+        foreach (var target in Targets)
+        {
+            try
+            {
+                using var parent = _root.OpenSubKey(target.KeyPath, writable: true);
+                parent?.DeleteSubKeyTree(BrowserProtocol.HostName, throwOnMissingSubKey: false);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+            {
+                _log.Warn($"Could not remove the native host key for {target.Browser}: {ex.Message}");
+                clean = false;
+            }
+        }
+
+        foreach (var manifest in new[] { ChromiumManifestPath, FirefoxManifestPath, ChromiumManifestPath + ".tmp", FirefoxManifestPath + ".tmp" })
+        {
+            try
+            {
+                if (File.Exists(manifest))
+                {
+                    File.Delete(manifest);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                _log.Warn($"Could not delete {manifest}: {ex.Message}");
+                clean = false;
+            }
+        }
+
+        try
+        {
+            if (Directory.Exists(_manifestFolder) && !Directory.EnumerateFileSystemEntries(_manifestFolder).Any())
+            {
+                Directory.Delete(_manifestFolder);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _log.Debug($"Left manifest folder {_manifestFolder}: {ex.Message}");
+        }
+
+        _log.Info(clean ? "Native host unregistered" : "Native host unregistered with warnings");
+        return clean;
     }
 
     public NativeHostStatus GetStatus()

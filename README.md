@@ -66,6 +66,17 @@ Plans can change. Items are listed in the order they're expected to ship.
 4. **Pause All** and **Resume All** control every active download at once.
 5. Finished items appear in **History**. **Clear Completed History** removes them from the list. It doesn't delete the files.
 
+## Browser extension
+
+Optional. The extension hands large browser downloads to the app, starting the app if it's closed. It works in Chrome, Edge, and Firefox; Brave, Opera, and Vivaldi use the Chrome version. Store listings are coming; until then, install it by hand:
+
+1. In the app, open **Settings > Browser Integration** and turn on **Take over large downloads from my browsers**, then click **Save Settings**.
+2. Download `download-solutions-chromium-x.y.z.zip` or `download-solutions-firefox-x.y.z.zip` from the [Releases](https://github.com/Erebus671/Download-Manager/releases) page and unzip it to a folder you'll keep.
+3. **Chrome, Edge, Brave, Opera, Vivaldi:** open `chrome://extensions` (Edge: `edge://extensions`), turn on **Developer mode**, click **Load unpacked**, and pick the unzipped folder.
+4. **Firefox:** open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on**, and pick `manifest.json` in the unzipped folder. Firefox removes temporary add-ons when it restarts, until the signed version is available.
+
+Within a minute, the browser shows **Connected** on the **Browser Integration** page. Downloads over 10 MB (or of unknown size) go to the app; private windows and excluded sites stay in the browser. Sign-in cookies are sent only for the matching download and are never saved.
+
 ## Settings
 
 Open the **Settings** tab, change values, then click **Save Settings**. A message next to the button confirms the save or explains what needs fixing.
@@ -102,7 +113,7 @@ When reporting a problem, set **Minimum log level** to **Debug**, reproduce it, 
 
 ## Uninstall
 
-Open **Settings > Apps > Installed apps** (or **Control Panel > Programs and Features**), select **AtraTech Download Solutions**, and choose **Uninstall**. This removes the program and its shortcuts. Your downloaded files and the data folder above are left in place.
+Open **Settings > Apps > Installed apps** (or **Control Panel > Programs and Features**), select **AtraTech Download Solutions**, and choose **Uninstall**. This removes the program, its shortcuts, and your browser connector registration. Your downloaded files and the data folder above are left in place.
 
 ## Building from source
 
