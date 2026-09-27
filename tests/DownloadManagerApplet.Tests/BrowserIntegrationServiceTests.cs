@@ -75,6 +75,41 @@ public class BrowserIntegrationServiceTests : TestBase
         Assert.Empty(_activations);
     }
 
+    [Theory]
+    [InlineData("server.iso", "redirect.iso", "big.iso", "server.iso")]
+    [InlineData(null, "redirect.iso", "big.iso", "big.iso")]
+    [InlineData(null, "redirect.iso", null, "redirect.iso")]
+    [InlineData(null, null, null, null)]
+    public async Task Handoff_FileName_PrefersServerThenBrowserThenRedirect(string? header, string? redirect, string? browserName, string? expected)
+    {
+        _state.Settings.BrowserIntegration.Enabled = true;
+        _probe.Result = new ProbeResult(true, null, "server answered 206", header, redirect);
+        var request = HandoffRequest();
+        request.Handoff!.FileName = browserName;
+
+        await NewService().HandleAsync(request, CancellationToken.None);
+
+        Assert.Equal(expected, Assert.Single(_added).FileName);
+    }
+
+    [Theory]
+    [InlineData("attachment; filename=\"report 2026.pdf\"", "/start", "report 2026.pdf", "real.iso")]
+    [InlineData(null, "/start", null, "real.iso")]
+    [InlineData(null, "/files/real.iso", null, "real.iso")]
+    public async Task HttpProbe_ReadsDispositionAndRedirectNames(string? disposition, string path, string? expectedHeader, string? expectedRedirect)
+    {
+        await using var server = new TinyHttpServer(disposition);
+        var handoff = new BrowserHandoff { Url = server.BaseUrl + path.TrimStart('/') };
+        var context = BrowserRequestContext.Create(handoff, false, NullLoggingService.Instance);
+
+        var result = await new HttpHandoffProbe(TimeSpan.FromSeconds(5)).ProbeAsync(handoff, context, CancellationToken.None);
+
+        Assert.True(result.Ok, result.Detail);
+        Assert.Equal(expectedHeader, result.HeaderFileName);
+        Assert.Equal(expectedRedirect, result.RedirectFileName);
+        Assert.Equal(4096, result.TotalBytes);
+    }
+
     [Fact]
     public async Task Handoff_Disabled_DoesNotProbe()
     {
@@ -391,5 +426,66 @@ public class BrowserIntegrationServiceTests : TestBase
         Assert.False(state.Settings.BrowserIntegration.Enabled);
         Assert.Equal(BrowserIntegrationSettings.DefaultMinimumBytes, state.Settings.BrowserIntegration.MinimumBytes);
         Assert.Empty(state.BrowserConnections);
+    }
+}
+
+/// <summary>Loopback HTTP server: /start redirects to /files/real.iso, which answers 206 with an optional Content-Disposition.</summary>
+internal sealed class TinyHttpServer : IAsyncDisposable
+{
+    private readonly System.Net.Sockets.TcpListener _listener = new(System.Net.IPAddress.Loopback, 0);
+    private readonly CancellationTokenSource _stop = new();
+    private readonly string? _disposition;
+    private readonly Task _loop;
+
+    public TinyHttpServer(string? disposition)
+    {
+        _disposition = disposition;
+        _listener.Start();
+        _loop = Task.Run(ServeAsync);
+    }
+
+    public string BaseUrl => $"http://127.0.0.1:{((System.Net.IPEndPoint)_listener.LocalEndpoint).Port}/";
+
+    private async Task ServeAsync()
+    {
+        while (!_stop.IsCancellationRequested)
+        {
+            System.Net.Sockets.TcpClient client;
+            try
+            {
+                client = await _listener.AcceptTcpClientAsync(_stop.Token);
+            }
+            catch (Exception ex) when (ex is OperationCanceledException or System.Net.Sockets.SocketException or ObjectDisposedException)
+            {
+                return;
+            }
+
+            using (client)
+            {
+                var stream = client.GetStream();
+                using var reader = new StreamReader(stream, leaveOpen: true);
+                var requestLine = await reader.ReadLineAsync() ?? string.Empty;
+                while (!string.IsNullOrEmpty(await reader.ReadLineAsync()))
+                {
+                }
+
+                var redirect = requestLine.Contains(" /start ", StringComparison.Ordinal);
+                var head = redirect
+                    ? "HTTP/1.1 302 Found\r\nLocation: /files/real.iso\r\nContent-Length: 0\r\n"
+                    : "HTTP/1.1 206 Partial Content\r\nContent-Range: bytes 0-0/4096\r\nContent-Length: 1\r\n"
+                      + (_disposition is null ? string.Empty : $"Content-Disposition: {_disposition}\r\n");
+                var bytes = System.Text.Encoding.ASCII.GetBytes(head + "Connection: close\r\n\r\n" + (redirect ? string.Empty : "x"));
+                await stream.WriteAsync(bytes);
+                await stream.FlushAsync();
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _stop.Cancel();
+        _listener.Stop();
+        await _loop.WaitAsync(TimeSpan.FromSeconds(5));
+        _stop.Dispose();
     }
 }

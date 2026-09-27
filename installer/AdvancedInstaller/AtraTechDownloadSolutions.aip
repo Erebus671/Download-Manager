@@ -13,10 +13,10 @@
     <ROW Property="ARPNOREPAIR" MultiBuildValue="DefaultBuild:1"/>
     <ROW Property="ARPPRODUCTICON" Value="DownloadManagerApplet.exe" Type="8"/>
     <ROW Property="Manufacturer" Value="AtraTech"/>
-    <ROW Property="ProductCode" Value="1033:{8FF7CC17-631E-4E5D-8C27-E27EBF92CD9E} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{CAB055AB-ED3A-4F56-A923-CD954A2A86E6} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="AtraTech Download Solutions"/>
-    <ROW Property="ProductVersion" Value="1.2.0" Options="32"/>
+    <ROW Property="ProductVersion" Value="1.3.0" Options="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{D0F9F00A-C579-441D-BDA4-DDDB405D57D8}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
@@ -177,10 +177,10 @@
     <ROW Action="AI_ResolveKnownFolders" Type="1" Source="aicustact.dll" Target="AI_ResolveKnownFolders"/>
     <ROW Action="AI_SHOW_LOG" Type="65" Source="aicustact.dll" Target="LaunchLogFile" WithoutSeq="true"/>
     <ROW Action="AI_STORE_LOCATION" Type="51" Source="ARPINSTALLLOCATION" Target="[APPDIR]"/>
-    <ROW Action="UnregisterBrowserConnector" Type="1106" Source="DownloadManagerApplet.exe" Target="--unregister-browser"/>
     <ROW Action="SET_APPDIR" Type="307" Source="APPDIR" Target="[ProgramFilesFolder][Manufacturer]\[ProductName]"/>
     <ROW Action="SET_SHORTCUTDIR" Type="307" Source="SHORTCUTDIR" Target="[ProgramMenuFolder][ProductName]"/>
     <ROW Action="SET_TARGETDIR_TO_APPDIR" Type="51" Source="TARGETDIR" Target="[APPDIR]"/>
+    <ROW Action="UnregisterBrowserConnector" Type="1106" Source="DownloadManagerApplet.exe" Target="--unregister-browser"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatCompsComponent">
     <ROW Feature_="MainFeature" Component_="APPDIR"/>

@@ -61,6 +61,18 @@ public class MainViewModelTests : TestBase
         Assert.Equal("Edge", item.SourceLabel);
     }
 
+    [Fact]
+    public void AddBrowserDownload_ResolvedNameBeatsBrowserName()
+    {
+        var viewModel = NewViewModel();
+        var handoff = new Services.Browser.BrowserHandoff { Url = "https://example.com/get?id=7", FileName = "get" };
+        var context = Services.Browser.BrowserRequestContext.Create(handoff, false, NullLoggingService.Instance);
+
+        viewModel.AddBrowserDownload(new Services.Browser.BrowserDownloadRequest(handoff, context, "Edge", 50_000_000, "setup-2.1.exe"));
+
+        Assert.Equal("setup-2.1.exe", Assert.Single(viewModel.Queue.Concat(viewModel.History)).FileName);
+    }
+
     private MainViewModel NewViewModel()
     {
         var state = TestStates.InFolder(Temp.Path);

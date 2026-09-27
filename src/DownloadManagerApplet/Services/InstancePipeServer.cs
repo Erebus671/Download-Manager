@@ -17,6 +17,9 @@ public sealed class InstancePipeServer : IAsyncDisposable
     private static readonly TimeSpan FailureBackoff = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan ShutdownTimeout = TimeSpan.FromSeconds(3);
 
+    /// <summary>Concurrent listeners, so a burst of browser handoffs doesn't queue behind one probe.</summary>
+    public const int ListenerCount = 4;
+
     private readonly string _pipeName;
     private readonly Func<InstanceMessage, CancellationToken, Task<bool>> _handler;
     private readonly Func<BrowserRequest, CancellationToken, Task<BrowserResponse>>? _browserHandler;
@@ -46,8 +49,8 @@ public sealed class InstancePipeServer : IAsyncDisposable
             throw new InvalidOperationException("Server already started.");
         }
 
-        _loop = Task.Run(() => ListenLoopAsync(_stop.Token));
-        _log.Info("Instance IPC server started");
+        _loop = Task.WhenAll(Enumerable.Range(0, ListenerCount).Select(_ => Task.Run(() => ListenLoopAsync(_stop.Token))));
+        _log.Info($"Instance IPC server started ({ListenerCount} listeners)");
     }
 
     private async Task ListenLoopAsync(CancellationToken stopToken)
@@ -59,7 +62,7 @@ public sealed class InstancePipeServer : IAsyncDisposable
                 await using var pipe = new NamedPipeServerStream(
                     _pipeName,
                     PipeDirection.InOut,
-                    maxNumberOfServerInstances: 1,
+                    maxNumberOfServerInstances: ListenerCount,
                     PipeTransmissionMode.Byte,
                     PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
 

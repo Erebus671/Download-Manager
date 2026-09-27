@@ -14,7 +14,7 @@
     <AssemblyTitle>AtraTech Download Solutions browser connector</AssemblyTitle>
     <Company>AtraTech</Company>
     <Description>Native Messaging host that hands browser downloads to AtraTech Download Solutions.</Description>
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AppIconPath)' != '' And Exists('$(AppIconPath)')">

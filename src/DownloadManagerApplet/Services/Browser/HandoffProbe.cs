@@ -1,10 +1,13 @@
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
 namespace DownloadManagerApplet.Services.Browser;
 
 /// <summary>Result of checking that the app can fetch a URL itself before the browser gives it up.</summary>
-public sealed record ProbeResult(bool Ok, long? TotalBytes, string Detail);
+/// <param name="HeaderFileName">Sanitized Content-Disposition name.</param>
+/// <param name="RedirectFileName">Sanitized name from the final URL after redirects, when it has an extension.</param>
+public sealed record ProbeResult(bool Ok, long? TotalBytes, string Detail, string? HeaderFileName = null, string? RedirectFileName = null);
 
 public interface IHandoffProbe
 {
@@ -45,7 +48,12 @@ public sealed class HttpHandoffProbe : IHandoffProbe
 
             var total = response.Content.Headers.ContentRange?.Length
                         ?? (response.StatusCode == System.Net.HttpStatusCode.OK ? response.Content.Headers.ContentLength : null);
-            return new ProbeResult(true, total, $"server answered {(int)response.StatusCode}");
+            var disposition = response.Content.Headers.ContentDisposition;
+            var headerName = DestinationPlanner.SanitizeFileName(disposition?.FileNameStar) ?? DestinationPlanner.SanitizeFileName(disposition?.FileName);
+            var finalUri = response.RequestMessage?.RequestUri;
+            var redirectName = finalUri is null ? null : DestinationPlanner.SanitizeFileName(Path.GetFileName(finalUri.LocalPath));
+            return new ProbeResult(true, total, $"server answered {(int)response.StatusCode}", headerName,
+                redirectName is not null && Path.HasExtension(redirectName) ? redirectName : null);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {

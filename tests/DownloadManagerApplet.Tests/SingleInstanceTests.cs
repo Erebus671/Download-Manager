@@ -153,6 +153,35 @@ public class SingleInstanceTests : TestBase
     }
 
     [Fact]
+    public async Task Server_HandlesConnectionsConcurrently()
+    {
+        const int clients = 3;
+        var pipeName = UniqueName();
+        var inFlight = 0;
+        var allArrived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var server = new InstancePipeServer(
+            pipeName,
+            async (_, token) =>
+            {
+                if (Interlocked.Increment(ref inFlight) == clients)
+                {
+                    allArrived.TrySetResult();
+                }
+
+                // One-at-a-time handling never reaches the client count, so every handler times out.
+                await allArrived.Task.WaitAsync(TimeSpan.FromSeconds(3), token);
+                return true;
+            },
+            NullLoggingService.Instance);
+        server.Start();
+
+        var results = await Task.WhenAll(Enumerable.Range(0, clients).Select(_ => InstancePipeClient.SendAsync(
+            pipeName, InstanceMessage.FromUrls([]), NullLoggingService.Instance, TimeSpan.FromSeconds(5))));
+
+        Assert.All(results, r => Assert.Equal(InstanceSendResult.Accepted, r));
+    }
+
+    [Fact]
     public async Task Client_ReportsUnreachable_WhenNoServer()
     {
         var result = await InstancePipeClient.SendAsync(

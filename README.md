@@ -27,11 +27,13 @@ Plans can change. Items are listed in the order they're expected to ship.
 
 - [x] **Browser integration (opt-in)**: extensions for Chrome, Edge, and Firefox (Brave, Opera, and Vivaldi use the Chrome extension) hand downloads over 10 MB to the app, starting it if it's closed. Per-site exclusion list; browser cookies used only for the matching authenticated download. Settings live in the app.
 - [x] **Formatted release notes**: the update prompt shows headings, bold text, code, and bullets instead of raw Markdown.
-- [ ] **Installer cleanup**: resolve the remaining harmless build warnings.
+- [x] **Installer cleanup**: resolve the remaining harmless build warnings.
+- [x] **Browser handoff fixes**: several downloads handed over at once are accepted in parallel; the server's file name is used from the start.
+- [ ] **Signed-in resume after restart**: resuming a signed-in download after the app restarts gets fresh sign-in cookies from the browser; nothing is saved to disk.
 
 ### Later
 
-- [ ] **Extension store listings**: publish the browser extensions to the Chrome Web Store, Edge Add-ons, and Firefox Add-ons.
+- [ ] **Extension store listings**: publish the browser extensions to the Chrome Web Store, Edge Add-ons, and Firefox Add-ons. Chromium and Firefox extensions: built - pending store publication.
 - [ ] **Video sites**: download from YouTube, public Instagram and TikTok content, and Twitch past broadcasts and clips. MP4 by default, MKV available. Helper tools (yt-dlp, ffmpeg, Deno) are downloaded on first use and checked against pinned SHA-256 hashes.
 - [ ] **Twitch live recording (opt-in)**: record live streams with elapsed time and size in the queue; stream info is saved alongside the video.
 - [ ] **Audio/video conversion**: ffmpeg presets for converting finished downloads.
@@ -68,14 +70,22 @@ Plans can change. Items are listed in the order they're expected to ship.
 
 ## Browser extension
 
-Optional. The extension hands large browser downloads to the app, starting the app if it's closed. It works in Chrome, Edge, and Firefox; Brave, Opera, and Vivaldi use the Chrome version. Store listings are coming; until then, install it by hand:
+Optional. The extension hands large browser downloads to the app, starting the app if it's closed.
 
-1. In the app, open **Settings > Browser Integration** and turn on **Take over large downloads from my browsers**, then click **Save Settings**.
-2. Download `download-solutions-chromium-x.y.z.zip` or `download-solutions-firefox-x.y.z.zip` from the [Releases](https://github.com/Erebus671/Download-Manager/releases) page and unzip it to a folder you'll keep.
-3. **Chrome, Edge, Brave, Opera, Vivaldi:** open `chrome://extensions` (Edge: `edge://extensions`), turn on **Developer mode**, click **Load unpacked**, and pick the unzipped folder.
-4. **Firefox:** open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on**, and pick `manifest.json` in the unzipped folder. Firefox removes temporary add-ons when it restarts, until the signed version is available.
+| Browser | Status |
+|---|---|
+| Chrome, Edge, Brave, Opera, Vivaldi | Built - pending store publication. Install by hand (below). |
+| Firefox | Built - pending store publication. No manual install. |
 
-Within a minute, the browser shows **Connected** on the **Browser Integration** page. Downloads over 10 MB (or of unknown size) go to the app; private windows and excluded sites stay in the browser. Sign-in cookies are sent only for the matching download and are never saved.
+**Why Firefox has no manual install:** Chromium browsers keep an unpacked extension installed as long as **Developer mode** stays on. Release Firefox only keeps add-ons signed by Mozilla; an unsigned one loads as a temporary add-on that Firefox removes on every restart, so takeover would silently stop. The Firefox version ships once Mozilla signs it.
+
+**Chrome, Edge, Brave, Opera, Vivaldi:**
+
+1. In the app, open **Settings > Browser Integration**, turn on **Take over large downloads from my browsers**, and click **Save Settings**.
+2. Download `download-solutions-chromium-x.y.z.zip` from the [Releases](https://github.com/Erebus671/Download-Manager/releases) page and unzip it to a folder you'll keep.
+3. Open `chrome://extensions` (Edge: `edge://extensions`), turn on **Developer mode**, click **Load unpacked**, and pick the unzipped folder.
+
+Within a minute, the browser shows **Connected** on the **Browser Integration** page. Downloads over 10 MB (or of unknown size) go to the app; private windows and excluded sites stay in the browser. Sign-in cookies are sent only for the matching download and are never saved, so a signed-in download interrupted by an app restart has to be started again from the browser.
 
 ## Settings
 

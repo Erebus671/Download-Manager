@@ -1,6 +1,6 @@
 # Download Solutions browser extension
 
-Opt-in MV3 extension that hands large browser downloads to AtraTech Download Solutions through a Native Messaging host. All settings live in the app (Settings > Browser integration). The extension's options page only shows them; the popup has quick toggles for enabling the extension and excluding the current site.
+Opt-in MV3 extension that hands large browser downloads to AtraTech Download Solutions through a Native Messaging host. All settings live in the app (Settings > Browser Integration). The extension's options page only shows them; the popup has quick toggles for enabling the extension and excluding the current site.
 
 ## Layout
 
@@ -21,14 +21,15 @@ powershell -NoProfile -File tools/Build-Extension.ps1 [-IconDir <folder>]
 Output in `publish/extension/`:
 
 - `chromium/` and `firefox/`: unpacked builds.
-- `download-solutions-chromium-<version>.zip`: store package, with the dev `key` removed.
-- `download-solutions-firefox-<version>.zip`: store package.
+- `download-solutions-chromium-<version>.zip`: GitHub release asset for **Load unpacked**; keeps the dev `key` so the host accepts its ID.
+- `download-solutions-chromium-<version>-store.zip`: Chrome Web Store / Edge Add-ons package, with the dev `key` removed.
+- `download-solutions-firefox-<version>-store.zip`: AMO package. Not a release asset: release Firefox only keeps Mozilla-signed add-ons.
 
 Placeholder icons are generated unless `-IconDir` points at `icon-16/32/48/128.png`.
 
 ## Try it locally
 
-1. Build and run the app from this repo, with the native host exe next to it (see Project-Notes, Reference 16). Turn on Settings > Browser integration. On start, the app registers the host in HKCU for Chrome, Edge, Chromium, Brave and Firefox.
+1. Build and run the app from this repo, with the native host exe next to it (see Project-Notes, Reference 16). Turn on Settings > Browser Integration. On start, the app registers the host in HKCU for Chrome, Edge, Chromium, Brave and Firefox.
 2. Chrome or Edge: open `chrome://extensions` (or `edge://extensions`), enable Developer mode, then use **Load unpacked** on `publish/extension/chromium`.
 3. Firefox: open `about:debugging#/runtime/this-firefox` and use **Load Temporary Add-on** on `publish/extension/firefox/manifest.json`. Temporary add-ons are removed when Firefox restarts. Release Firefox only installs signed add-ons.
 

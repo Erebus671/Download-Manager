@@ -13,6 +13,8 @@ public sealed class HttpDownloadEngine : IDownloadEngine
     private const int BufferSize = 81920;
     private static readonly TimeSpan ProgressReportInterval = TimeSpan.FromMilliseconds(250);
 
+    public const string SignInLostMessage = "The browser's sign-in isn't kept after the app restarts. Download the file again from your browser.";
+
     private readonly HttpClient _httpClient;
     private readonly ILoggingService _log;
     private readonly DestinationPlanner? _planner;
@@ -28,6 +30,11 @@ public sealed class HttpDownloadEngine : IDownloadEngine
     {
         // Browser downloads get their own client so their cookies never reach other downloads.
         var context = item.BrowserContext;
+        if (context is null && item.UsedBrowserSignIn)
+        {
+            throw new DownloadNotResumableException(SignInLostMessage);
+        }
+
         using var browserClient = context?.CreateClient();
         var client = browserClient ?? _httpClient;
 

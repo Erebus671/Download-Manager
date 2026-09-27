@@ -11,7 +11,8 @@ public sealed class BrowserConnection
 }
 
 /// <summary>What the app does with a browser download it accepted.</summary>
-public sealed record BrowserDownloadRequest(BrowserHandoff Handoff, BrowserRequestContext Context, string Browser, long? TotalBytes);
+/// <param name="FileName">Server's Content-Disposition name, else the browser's, else the redirected URL's; null falls back to the URL.</param>
+public sealed record BrowserDownloadRequest(BrowserHandoff Handoff, BrowserRequestContext Context, string Browser, long? TotalBytes, string? FileName = null);
 
 /// <summary>Answers requests from the native host. State changes run on the UI thread via <c>runOnUi</c>.</summary>
 public sealed class BrowserIntegrationService
@@ -131,6 +132,7 @@ public sealed class BrowserIntegrationService
         }
 
         var size = handoff.TotalBytes is > 0 ? handoff.TotalBytes : probe.TotalBytes;
+        var fileName = probe.HeaderFileName ?? DestinationPlanner.SanitizeFileName(handoff.FileName) ?? probe.RedirectFileName;
         var added = false;
         await _runOnUi(() =>
         {
@@ -140,7 +142,7 @@ public sealed class BrowserIntegrationService
                 return;
             }
 
-            added = _addDownload(new BrowserDownloadRequest(handoff, context, browser, size));
+            added = _addDownload(new BrowserDownloadRequest(handoff, context, browser, size, fileName));
         }, cancellationToken);
 
         if (reason == BrowserRejectReason.TooSmall)

@@ -25,9 +25,12 @@ public sealed class DownloadItem
     /// <summary>Browser name for <see cref="DownloadSource.Browser"/> items ("Chrome", "Edge", ...).</summary>
     public string? SourceDetail { get; set; }
 
-    /// <summary>Browser cookies and headers; memory only, so a download resumed after a restart runs without them.</summary>
+    /// <summary>Browser cookies and headers; memory only (see <see cref="UsedBrowserSignIn"/>).</summary>
     [JsonIgnore]
     public BrowserRequestContext? BrowserContext { get; set; }
+
+    /// <summary>Sent with browser cookies; resuming after a restart (cookies gone) fails instead of fetching a sign-in page.</summary>
+    public bool UsedBrowserSignIn { get; set; }
 
     /// <summary>The user picked the name; the server's name is not adopted.</summary>
     public bool UserNamed { get; set; }

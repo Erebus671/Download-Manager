@@ -212,10 +212,11 @@ public sealed class MainViewModel : ObservableObject
             return false;
         }
 
-        var item = _planner.CreateItem(uri.AbsoluteUri, uri, null, DownloadSource.Browser, handoff.FileName, request.TotalBytes, handoff.MimeType);
+        var item = _planner.CreateItem(uri.AbsoluteUri, uri, null, DownloadSource.Browser, request.FileName ?? handoff.FileName, request.TotalBytes, handoff.MimeType);
         item.SourceDetail = request.Browser;
         item.TotalBytes = request.TotalBytes;
         item.BrowserContext = request.Context;
+        item.UsedBrowserSignIn = request.Context.CookieCount > 0;
         _state.Downloads.Add(item);
         var vm = AddViewModelFor(item);
         _orchestrator.Enqueue(item, vm);

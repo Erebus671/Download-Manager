@@ -164,6 +164,13 @@ public sealed class DownloadOrchestrator
 
                     break;
                 }
+                catch (DownloadNotResumableException ex)
+                {
+                    item.Status = DownloadStatus.Error;
+                    item.LastError = ex.Message;
+                    _log.Warn($"{item.FileName}: {ex.Message}");
+                    break;
+                }
                 catch (Exception ex) when (ex is HttpRequestException or IOException)
                 {
                     item.RetryCount++;

@@ -6,8 +6,9 @@
     Output under publish\extension:
       chromium\                                   unpacked, keeps the manifest "key" (fixed dev ID) for Load unpacked
       firefox\                                    unpacked, for about:debugging > Load Temporary Add-on
-      download-solutions-chromium-<ver>.zip       store upload; "key" removed (the Chrome Web Store rejects it)
-      download-solutions-firefox-<ver>.zip        AMO upload
+      download-solutions-chromium-<ver>.zip       GitHub release asset for Load unpacked; keeps "key" so the host accepts its ID
+      download-solutions-chromium-<ver>-store.zip Chrome Web Store / Edge Add-ons upload; "key" removed (the stores reject it)
+      download-solutions-firefox-<ver>-store.zip  AMO upload (not a release asset: release Firefox needs Mozilla's signature)
 
 .PARAMETER IconDir
     Folder with icon-16.png, icon-32.png, icon-48.png, icon-128.png. Placeholder icons are generated when omitted.
@@ -102,21 +103,25 @@ function Build-Target([string]$Name, [string]$ManifestFile, [bool]$StripKeyForZi
     $manifest = $manifestText | ConvertFrom-Json
     Write-Utf8NoBom -Path (Join-Path $target 'manifest.json') -Text $manifestText
 
-    $zipPath = Join-Path $outRoot ("download-solutions-{0}-{1}.zip" -f $Name, $manifest.version)
+    $storeZip = Join-Path $outRoot ("download-solutions-{0}-{1}-store.zip" -f $Name, $manifest.version)
     if ($StripKeyForZip) {
+        $manualZip = Join-Path $outRoot ("download-solutions-{0}-{1}.zip" -f $Name, $manifest.version)
+        New-Zip -Folder $target -ZipPath $manualZip
+        Write-Host "Built $manualZip"
+
         $staging = Join-Path $outRoot "$Name-store"
         if (Test-Path -LiteralPath $staging) { Remove-Item -LiteralPath $staging -Recurse -Force }
         Copy-Item -LiteralPath $target -Destination $staging -Recurse
         $manifest.PSObject.Properties.Remove('key')
         Write-Utf8NoBom -Path (Join-Path $staging 'manifest.json') -Text ($manifest | ConvertTo-Json -Depth 10)
-        New-Zip -Folder $staging -ZipPath $zipPath
+        New-Zip -Folder $staging -ZipPath $storeZip
         Remove-Item -LiteralPath $staging -Recurse -Force
     }
     else {
-        New-Zip -Folder $target -ZipPath $zipPath
+        New-Zip -Folder $target -ZipPath $storeZip
     }
 
-    Write-Host "Built $Name -> $target and $zipPath"
+    Write-Host "Built $Name -> $target and $storeZip"
 }
 
 try {
@@ -124,6 +129,9 @@ try {
     if (-not $IconDir) { Write-Warning 'No -IconDir given; using generated placeholder icons.' }
     Build-Target -Name 'chromium' -ManifestFile 'manifest.chromium.json' -StripKeyForZip $true
     Build-Target -Name 'firefox' -ManifestFile 'manifest.firefox.json' -StripKeyForZip $false
+    Get-ChildItem -LiteralPath $outRoot -Filter 'download-solutions-firefox-*.zip' |
+        Where-Object { $_.Name -notlike '*-store.zip' } |
+        Remove-Item -Force
 }
 catch {
     Write-Error "Extension build failed: $($_.Exception.Message)"

@@ -62,6 +62,39 @@ public class DownloadOrchestratorTests
         Assert.NotNull(item.LastError);
     }
 
+    [Fact]
+    public void Enqueue_NotResumable_FailsWithoutRetrying()
+    {
+        var orchestrator = new DownloadOrchestrator(new NotResumableEngine(), NullLoggingService.Instance, () => 2, () => 3);
+        var item = NewItem();
+
+        orchestrator.Enqueue(item, new Progress<DownloadProgress>());
+
+        EventuallyAssert.True(() => item.Status == DownloadStatus.Error, PollTimeout);
+        Assert.Equal(0, item.RetryCount);
+        Assert.Equal(HttpDownloadEngine.SignInLostMessage, item.LastError);
+    }
+
+    [Fact]
+    public async Task Engine_SignedInDownloadWithoutCookies_IsNotResumable()
+    {
+        using var http = new System.Net.Http.HttpClient();
+        var item = NewItem();
+        item.Source = DownloadSource.Browser;
+        item.UsedBrowserSignIn = true;
+
+        var ex = await Assert.ThrowsAsync<DownloadNotResumableException>(
+            () => new HttpDownloadEngine(http, NullLoggingService.Instance).DownloadAsync(item, new Progress<DownloadProgress>(), CancellationToken.None));
+
+        Assert.Equal(HttpDownloadEngine.SignInLostMessage, ex.Message);
+    }
+
+    private sealed class NotResumableEngine : IDownloadEngine
+    {
+        public Task DownloadAsync(DownloadItem item, IProgress<DownloadProgress> progress, CancellationToken cancellationToken) =>
+            throw new DownloadNotResumableException(HttpDownloadEngine.SignInLostMessage);
+    }
+
     private static DownloadItem NewItem() => new()
     {
         Url = "https://example.com/file.bin",
