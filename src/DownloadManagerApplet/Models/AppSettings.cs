@@ -41,4 +41,6 @@ public sealed class AppSettings
 
     /// <summary>Not shown in the UI; set in state.json to test releases marked pre-release on GitHub.</summary>
     public bool IncludePrereleaseUpdates { get; set; }
+
+    public BrowserIntegrationSettings BrowserIntegration { get; set; } = new();
 }

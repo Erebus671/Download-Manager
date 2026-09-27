@@ -23,6 +23,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\DownloadManagerApplet\DownloadManagerApplet.csproj" />
+    <!-- Aliased: the host compiles the shared protocol files too, so its copies must not clash with the app's. -->
+    <ProjectReference Include="..\..\src\DownloadManagerApplet.NativeHost\DownloadManagerApplet.NativeHost.csproj" Aliases="nativehost" />
   </ItemGroup>
 
 </Project>

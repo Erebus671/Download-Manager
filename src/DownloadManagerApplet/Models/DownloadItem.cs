@@ -1,4 +1,6 @@
 using System.IO;
+using System.Text.Json.Serialization;
+using DownloadManagerApplet.Services.Browser;
 
 namespace DownloadManagerApplet.Models;
 
@@ -19,6 +21,13 @@ public sealed class DownloadItem
     public string? RuleName { get; set; }
     public string? MimeType { get; set; }
     public DownloadSource Source { get; set; } = DownloadSource.Manual;
+
+    /// <summary>Browser name for <see cref="DownloadSource.Browser"/> items ("Chrome", "Edge", ...).</summary>
+    public string? SourceDetail { get; set; }
+
+    /// <summary>Browser cookies and headers; memory only, so a download resumed after a restart runs without them.</summary>
+    [JsonIgnore]
+    public BrowserRequestContext? BrowserContext { get; set; }
 
     /// <summary>The user picked the name; the server's name is not adopted.</summary>
     public bool UserNamed { get; set; }

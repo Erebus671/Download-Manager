@@ -5,6 +5,7 @@ using System.Windows.Threading;
 using DownloadManagerApplet.Models;
 using DownloadManagerApplet.Mvvm;
 using DownloadManagerApplet.Services;
+using DownloadManagerApplet.Services.Browser;
 
 namespace DownloadManagerApplet.ViewModels;
 
@@ -51,6 +52,9 @@ public sealed class MainViewModel : ObservableObject
     public UpdatesViewModel? Updates { get; }
     public IReadOnlyList<LogLevelSetting> LogLevels { get; } = Enum.GetValues<LogLevelSetting>();
     public DestinationSettingsViewModel Destinations { get; }
+
+    /// <summary>Settings > Browser integration; null in tests that don't need it.</summary>
+    public BrowserIntegrationViewModel? BrowserIntegration { get; set; }
     public ObservableCollection<SaveTargetOption> SaveTargets { get; } = new();
 
     /// <summary>Folder picker for "Choose folder..."; replaceable for tests. Takes the starting folder, returns the choice or null.</summary>
@@ -196,6 +200,27 @@ public sealed class MainViewModel : ObservableObject
         }
 
         return added;
+    }
+
+    /// <summary>Queues a download the browser handed over. Call on the UI thread.</summary>
+    public bool AddBrowserDownload(BrowserDownloadRequest request)
+    {
+        var handoff = request.Handoff;
+        if (!BrowserHandoffPolicy.TryGetHttpUri(handoff.Url, out var uri))
+        {
+            _log.Warn("Browser handed over a download without a valid http(s) URL");
+            return false;
+        }
+
+        var item = _planner.CreateItem(uri.AbsoluteUri, uri, null, DownloadSource.Browser, handoff.FileName, request.TotalBytes, handoff.MimeType);
+        item.SourceDetail = request.Browser;
+        item.TotalBytes = request.TotalBytes;
+        item.BrowserContext = request.Context;
+        _state.Downloads.Add(item);
+        var vm = AddViewModelFor(item);
+        _orchestrator.Enqueue(item, vm);
+        Persist();
+        return true;
     }
 
     /// <summary>A null <paramref name="folder"/> means Automatic (rules, then file type).</summary>
@@ -415,6 +440,7 @@ public sealed class MainViewModel : ObservableObject
         if (Persist())
         {
             _log.Info("Settings saved");
+            BrowserIntegration?.AfterSave();
             ShowSaveMessage("✓ Settings saved", failed: false);
         }
         else
@@ -435,7 +461,7 @@ public sealed class MainViewModel : ObservableObject
             return "Max retry attempts must be 0 to 20.";
         }
 
-        return Destinations.Validate();
+        return Destinations.Validate() ?? BrowserIntegration?.ApplyPendingEdits();
     }
 
     private void ShowSaveMessage(string message, bool failed)

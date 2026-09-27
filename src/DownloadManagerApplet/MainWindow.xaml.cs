@@ -85,6 +85,12 @@ public partial class MainWindow : Window
         Activate();
     }
 
+    public void ShowBrowserSettings()
+    {
+        SettingsTab.IsSelected = true;
+        BrowserNav.IsChecked = true;
+    }
+
     private void MinimizeButton_Click(object sender, RoutedEventArgs e) => SystemCommands.MinimizeWindow(this);
 
     private void MaximizeRestoreButton_Click(object sender, RoutedEventArgs e)

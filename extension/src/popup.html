@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>AtraTech Download Solutions</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <h1><img src="icons/icon-32.png" alt="" width="16" height="16">AtraTech Download Solutions</h1>
+
+  <div class="row">
+    <span>App</span>
+    <span id="appStatus" class="dim">Checking...</span>
+  </div>
+
+  <div id="connectedPanel" hidden>
+    <label class="row">
+      <span>Take over downloads</span>
+      <input id="enabledToggle" type="checkbox" role="switch">
+    </label>
+    <label class="row" id="siteRow">
+      <span>On this site (<span id="siteName"></span>)</span>
+      <input id="siteToggle" type="checkbox" role="switch">
+    </label>
+    <p id="notice" class="hint" hidden></p>
+    <div class="row" id="lastRow" hidden>
+      <span class="ellipsis">Last: <span id="lastName"></span></span>
+      <span id="lastStatus"></span>
+    </div>
+    <p id="lastMessage" class="hint" hidden></p>
+  </div>
+
+  <p id="missingPanel" class="hint" hidden>
+    Downloads stay in the browser until the app is installed. If it is installed, open it and use
+    Settings &gt; Browser integration &gt; Repair.
+  </p>
+
+  <div class="buttons">
+    <button id="openApp" type="button">Open app</button>
+    <button id="openSettings" type="button">App settings</button>
+    <button id="getApp" type="button" hidden>Get the app</button>
+    <button id="retry" type="button" hidden>Retry</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 using System.IO;
 using System.IO.Pipes;
+using DownloadManagerApplet.Services.Browser;
 
 namespace DownloadManagerApplet.Services;
 
@@ -10,11 +11,15 @@ namespace DownloadManagerApplet.Services;
 public sealed class InstancePipeServer : IAsyncDisposable
 {
     public static readonly TimeSpan DefaultConnectionTimeout = TimeSpan.FromSeconds(5);
+
+    /// <summary>Budget for answering a browser request once read; covers the handoff probe. Under the client's reply timeout.</summary>
+    public static readonly TimeSpan BrowserRequestTimeout = TimeSpan.FromSeconds(7);
     private static readonly TimeSpan FailureBackoff = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan ShutdownTimeout = TimeSpan.FromSeconds(3);
 
     private readonly string _pipeName;
     private readonly Func<InstanceMessage, CancellationToken, Task<bool>> _handler;
+    private readonly Func<BrowserRequest, CancellationToken, Task<BrowserResponse>>? _browserHandler;
     private readonly ILoggingService _log;
     private readonly TimeSpan _connectionTimeout;
     private readonly CancellationTokenSource _stop = new();
@@ -24,10 +29,12 @@ public sealed class InstancePipeServer : IAsyncDisposable
         string pipeName,
         Func<InstanceMessage, CancellationToken, Task<bool>> handler,
         ILoggingService log,
-        TimeSpan? connectionTimeout = null)
+        TimeSpan? connectionTimeout = null,
+        Func<BrowserRequest, CancellationToken, Task<BrowserResponse>>? browserHandler = null)
     {
         _pipeName = pipeName;
         _handler = handler;
+        _browserHandler = browserHandler;
         _log = log;
         _connectionTimeout = connectionTimeout ?? DefaultConnectionTimeout;
     }
@@ -88,6 +95,13 @@ public sealed class InstancePipeServer : IAsyncDisposable
             var message = await InstanceMessageCodec.ReadAsync(pipe, timeout.Token);
             _log.Debug($"Instance IPC received {InstanceMessageCodec.Describe(message)}");
 
+            if (message.Browser is { } browserRequest)
+            {
+                timeout.CancelAfter(BrowserRequestTimeout);
+                await ReplyToBrowserAsync(pipe, browserRequest, timeout.Token);
+                return;
+            }
+
             var accepted = await _handler(message, timeout.Token);
             pipe.WriteByte(accepted ? InstanceMessageCodec.Accepted : InstanceMessageCodec.Rejected);
             await pipe.FlushAsync(timeout.Token);
@@ -105,6 +119,29 @@ public sealed class InstancePipeServer : IAsyncDisposable
         {
             _log.Warn($"Instance IPC client disconnected: {ex.Message}");
         }
+    }
+
+    private async Task ReplyToBrowserAsync(NamedPipeServerStream pipe, BrowserRequest request, CancellationToken token)
+    {
+        BrowserResponse response;
+        if (_browserHandler is null)
+        {
+            response = BrowserResponse.Failed(BrowserRejectReason.AppError, "Browser integration is not available in this build.");
+        }
+        else
+        {
+            try
+            {
+                response = await _browserHandler(request, token);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _log.Error($"Browser request failed: {BrowserProtocol.Describe(request)}", ex);
+                response = BrowserResponse.Failed(BrowserRejectReason.AppError, "The app hit an error; see its log.");
+            }
+        }
+
+        await InstanceMessageCodec.WriteBrowserReplyAsync(pipe, response, token);
     }
 
     private static void TryReply(NamedPipeServerStream pipe, byte reply)

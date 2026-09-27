@@ -38,12 +38,22 @@ public sealed class DestinationPlanner
     /// <summary>Raised (on the UI thread when there is one) after a download's name or folder changed.</summary>
     public event Action<DownloadItem>? DestinationChanged;
 
-    /// <summary>Builds a new item. A null <paramref name="folder"/> means Automatic: rules, then file type.</summary>
-    public DownloadItem CreateItem(string url, Uri uri, string? folder, DownloadSource source = DownloadSource.Manual)
+    /// <summary>
+    /// Builds a new item. A null <paramref name="folder"/> means Automatic: rules, then file type.
+    /// <paramref name="suggestedFileName"/> (the browser's name) and <paramref name="knownSize"/> improve the first guess.
+    /// </summary>
+    public DownloadItem CreateItem(
+        string url,
+        Uri uri,
+        string? folder,
+        DownloadSource source = DownloadSource.Manual,
+        string? suggestedFileName = null,
+        long? knownSize = null,
+        string? mimeType = null)
     {
-        var fileName = DeriveFileName(uri, _clock());
-        var facts = new DownloadFacts(uri, fileName, Source: source);
-        var category = DestinationResolver.Categorize(_state.Settings, fileName);
+        var fileName = SanitizeFileName(suggestedFileName) ?? DeriveFileName(uri, _clock());
+        var facts = new DownloadFacts(uri, fileName, knownSize, mimeType, source);
+        var category = DestinationResolver.Categorize(_state.Settings, fileName, mimeType);
         string? ruleName = null;
         var automatic = folder is null;
 

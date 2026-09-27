@@ -9,7 +9,7 @@ public enum FileCategory
     Other
 }
 
-/// <summary>Where a download came from; browser and video-site sources arrive with tasks 8 and 9.</summary>
+/// <summary>Where a download came from.</summary>
 public enum DownloadSource
 {
     Manual,

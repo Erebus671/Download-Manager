@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>AtraTech Download Solutions - Options</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body class="page">
+  <h1><img src="icons/icon-32.png" alt="" width="16" height="16">AtraTech Download Solutions - Options</h1>
+
+  <div class="row"><span>App connection</span><span id="appStatus" class="dim">Checking...</span></div>
+  <div class="row"><span>Take over downloads</span><span id="enabled">-</span></div>
+  <div class="row"><span>Files larger than</span><span id="minimum">-</span></div>
+  <div class="row"><span>When the app isn't running</span><span id="startApp">-</span></div>
+  <div class="row"><span>Use browser cookies for sign-in downloads</span><span id="cookies">-</span></div>
+  <div class="row"><span>Notify when a download is taken over</span><span id="notify">-</span></div>
+  <div class="row"><span>Excluded sites</span><span id="excludedCount">-</span></div>
+  <ul id="excludedList" class="hint"></ul>
+
+  <p class="hint">Change these in the app: Settings &gt; Browser integration. Private windows always stay in the browser.</p>
+  <div class="buttons">
+    <button id="openSettings" type="button">Open app settings</button>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

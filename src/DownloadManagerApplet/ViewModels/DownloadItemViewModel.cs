@@ -63,6 +63,14 @@ public sealed class DownloadItemViewModel : ObservableObject, IProgress<Download
     public string? CategoryLabel =>
         Model.Category is { } category and not FileCategory.Other ? DestinationResolver.DisplayName(category) : null;
 
+    /// <summary>"Chrome", or "Chrome · signed in" while browser cookies are attached; null for other sources.</summary>
+    public string? SourceLabel => Model.Source switch
+    {
+        DownloadSource.Browser when Model.BrowserContext is { CookieCount: > 0 } => $"{Model.SourceDetail ?? "Browser"} · signed in",
+        DownloadSource.Browser => Model.SourceDetail ?? "Browser",
+        _ => null
+    };
+
     public string Url => Model.Url;
 
     public RelayCommand PauseCommand { get; }

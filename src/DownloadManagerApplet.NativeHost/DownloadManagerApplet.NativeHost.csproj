@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Product>AtraTech Download Solutions</Product>
+    <AssemblyTitle>AtraTech Download Solutions browser connector</AssemblyTitle>
+    <Company>AtraTech</Company>
+    <Description>Native Messaging host that hands browser downloads to AtraTech Download Solutions.</Description>
+    <Version>1.2.0</Version>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AppIconPath)' != '' And Exists('$(AppIconPath)')">
+    <ApplicationIcon>$(AppIconPath)</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DownloadManagerApplet.Tests" />
+  </ItemGroup>
+
+  <!-- Protocol and pipe code shared with the app; compiled into both so the host stays WPF-free. -->
+  <ItemGroup>
+    <Compile Include="..\DownloadManagerApplet\Models\BrowserIntegrationSettings.cs" Link="Shared\BrowserIntegrationSettings.cs" />
+    <Compile Include="..\DownloadManagerApplet\Services\Browser\BrowserProtocol.cs" Link="Shared\BrowserProtocol.cs" />
+    <Compile Include="..\DownloadManagerApplet\Services\Browser\BrowserPipeClient.cs" Link="Shared\BrowserPipeClient.cs" />
+    <Compile Include="..\DownloadManagerApplet\Services\Browser\BrowserExtensionIds.cs" Link="Shared\BrowserExtensionIds.cs" />
+    <Compile Include="..\DownloadManagerApplet\Services\InstanceMessage.cs" Link="Shared\InstanceMessage.cs" />
+    <Compile Include="..\DownloadManagerApplet\Services\InstanceNames.cs" Link="Shared\InstanceNames.cs" />
+  </ItemGroup>
+
+</Project>

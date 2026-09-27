@@ -41,6 +41,11 @@
                                 <TextBlock AutomationProperties.AutomationId="{Binding FileName, StringFormat='Category_{0}'}"
                                            Text="{Binding CategoryLabel}" FontSize="11" Foreground="{StaticResource TextDimBrush}" />
                             </Border>
+                            <Border Style="{StaticResource StatusPill}" Margin="6,0,0,0" VerticalAlignment="Center"
+                                    Visibility="{Binding SourceLabel, Converter={StaticResource StringToVisibility}}">
+                                <TextBlock AutomationProperties.AutomationId="{Binding FileName, StringFormat='Source_{0}'}"
+                                           Text="{Binding SourceLabel}" FontSize="11" Foreground="{StaticResource AccentBrush}" />
+                            </Border>
                         </StackPanel>
                         <Border Grid.Column="1" Style="{StaticResource StatusPill}">
                             <TextBlock AutomationProperties.AutomationId="{Binding FileName, StringFormat='Status_{0}'}"
@@ -218,7 +223,7 @@
         </Border>
 
         <!-- Main content -->
-        <TabControl>
+        <TabControl x:Name="MainTabs">
             <TabItem Header="Queue">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <ItemsControl ItemsSource="{Binding Queue}" Margin="12"
@@ -233,7 +238,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="Settings">
+            <TabItem x:Name="SettingsTab" Header="Settings">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="170" />
@@ -247,6 +252,8 @@
                                          Content="General" GroupName="SettingsNav" IsChecked="True" Style="{StaticResource SettingsNavItem}" />
                             <RadioButton x:Name="UpdatesNav" AutomationProperties.AutomationId="SettingsUpdatesNav"
                                          Content="Updates" GroupName="SettingsNav" Style="{StaticResource SettingsNavItem}" />
+                            <RadioButton x:Name="BrowserNav" AutomationProperties.AutomationId="SettingsBrowserNav"
+                                         Content="Browser integration" GroupName="SettingsNav" Style="{StaticResource SettingsNavItem}" />
                         </StackPanel>
                     </Border>
 
@@ -412,6 +419,176 @@
 
                                 <TextBlock Foreground="{StaticResource TextDimBrush}" TextWrapping="Wrap" Margin="2,4,0,0"
                                            Text="Updates come from GitHub Releases. Each installer is checked against the AtraTech release signature before it runs." />
+                            </StackPanel>
+
+                            <StackPanel Visibility="{Binding IsChecked, ElementName=BrowserNav, Converter={StaticResource BoolToVisibility}}"
+                                        DataContext="{Binding BrowserIntegration}">
+                                <TextBlock Text="Browser integration" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,16" />
+
+                                <Border Style="{StaticResource CardBorder}">
+                                    <StackPanel>
+                                        <CheckBox AutomationProperties.AutomationId="BrowserEnabledToggle"
+                                                  Style="{StaticResource ToggleSwitch}" Content="Take over large downloads from my browsers"
+                                                  IsChecked="{Binding Enabled}" />
+                                        <TextBlock Foreground="{StaticResource TextDimBrush}" TextWrapping="Wrap" Margin="44,4,0,0" FontSize="11"
+                                                   Text="Needs the Download Solutions extension in each browser. Private windows always stay in the browser." />
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Text="Browsers" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,12,0,8" />
+                                <Border Style="{StaticResource CardBorder}">
+                                    <StackPanel>
+                                        <ItemsControl ItemsSource="{Binding Browsers}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type vm:BrowserStatusRow}">
+                                                    <Grid Margin="0,0,0,10">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
+                                                            <TextBlock Text="{Binding Detail}" Foreground="{StaticResource TextDimBrush}" FontSize="11" TextWrapping="Wrap" />
+                                                        </StackPanel>
+                                                        <Border Grid.Column="1" Style="{StaticResource StatusPill}" VerticalAlignment="Center" Margin="8,0,0,0">
+                                                            <TextBlock AutomationProperties.AutomationId="{Binding Name, StringFormat='BrowserStatus_{0}'}"
+                                                                       Text="{Binding StatusText}" FontSize="11">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Foreground" Value="{StaticResource TextDimBrush}" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding State}" Value="{x:Static vm:BrowserRowState.Connected}">
+                                                                                <Setter Property="Foreground" Value="{StaticResource OkBrush}" />
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding State}" Value="{x:Static vm:BrowserRowState.NotConnected}">
+                                                                                <Setter Property="Foreground" Value="{StaticResource WarnBrush}" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                        </Border>
+                                                        <Button Grid.Column="2" Content="Get extension" Style="{StaticResource SmallButton}" Margin="8,0,0,0"
+                                                                VerticalAlignment="Center"
+                                                                AutomationProperties.AutomationId="{Binding Name, StringFormat='GetExtension_{0}'}"
+                                                                Command="{Binding DataContext.GetExtensionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                Visibility="{Binding ShowGetExtension, Converter={StaticResource BoolToVisibility}}" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <Grid Margin="0,2,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="Browser connector: " Foreground="{StaticResource TextDimBrush}" FontSize="11" />
+                                                <TextBlock AutomationProperties.AutomationId="HostStatusText" Text="{Binding HostStatusText}" FontSize="11"
+                                                           TextWrapping="Wrap" MaxWidth="330">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{StaticResource WarnBrush}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding HostRegistered}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{StaticResource OkBrush}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+                                            <Button Grid.Column="1" AutomationProperties.AutomationId="RepairConnectorButton" Content="Repair"
+                                                    Style="{StaticResource SmallButton}" Command="{Binding RepairCommand}" Margin="8,0,0,0"
+                                                    ToolTip="Re-register the connector with every supported browser" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Text="Options" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,12,0,8" />
+                                <Border Style="{StaticResource CardBorder}">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Take over downloads larger than" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" />
+                                            <TextBox AutomationProperties.AutomationId="BrowserMinimumSizeTextBox" Width="70" Margin="8,0,6,0"
+                                                     Text="{Binding MinimumMegabytesText, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock Text="MB" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <TextBlock Foreground="{StaticResource TextDimBrush}" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                                                   Text="Downloads of unknown size are always taken over." />
+
+                                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                            <TextBlock Text="When the app isn't running" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" />
+                                            <ComboBox AutomationProperties.AutomationId="BrowserStartAppComboBox" Width="210" Margin="8,0,0,0"
+                                                      ItemsSource="{Binding StartAppOptions}" DisplayMemberPath="Label" SelectedValuePath="Value"
+                                                      SelectedValue="{Binding StartAppWhenNotRunning}" />
+                                        </StackPanel>
+
+                                        <CheckBox AutomationProperties.AutomationId="BrowserCookiesCheckBox" Margin="0,12,0,0"
+                                                  Style="{StaticResource ToggleSwitch}" Content="Use the browser's sign-in cookies for the download" IsChecked="{Binding UseBrowserCookies}" />
+                                        <TextBlock Foreground="{StaticResource TextDimBrush}" FontSize="11" Margin="44,2,0,0" TextWrapping="Wrap"
+                                                   Text="Kept in memory for that download only; never saved or logged." />
+                                        <CheckBox AutomationProperties.AutomationId="BrowserNotifyCheckBox" Margin="0,12,0,0"
+                                                  Style="{StaticResource ToggleSwitch}" Content="Show a browser notification when a download is taken over" IsChecked="{Binding ShowBrowserNotification}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Text="Excluded sites" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,12,0,2" />
+                                <TextBlock Foreground="{StaticResource TextDimBrush}" TextWrapping="Wrap" Margin="0,0,0,8"
+                                           Text="Downloads from these sites stay in the browser. example.com includes its subdomains; *.example.com means subdomains only." />
+                                <Border Style="{StaticResource CardBorder}">
+                                    <StackPanel>
+                                        <TextBlock Text="No excluded sites." Foreground="{StaticResource TextDimBrush}" Margin="0,0,0,8">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ExcludedSites.Count}" Value="0">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <ItemsControl ItemsSource="{Binding ExcludedSites}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type vm:ExcludedSiteRow}">
+                                                    <Grid Margin="0,0,0,6">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="{Binding Site}" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                        <Button Grid.Column="1" Content="Remove" Style="{StaticResource SmallButton}"
+                                                                AutomationProperties.AutomationId="{Binding Site, StringFormat='RemoveSite_{0}'}"
+                                                                Command="{Binding RemoveCommand}" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <Grid Margin="0,4,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox AutomationProperties.AutomationId="NewExcludedSiteTextBox"
+                                                     Text="{Binding NewSite, UpdateSourceTrigger=PropertyChanged}">
+                                                <TextBox.InputBindings>
+                                                    <KeyBinding Key="Enter" Command="{Binding AddSiteCommand}" />
+                                                </TextBox.InputBindings>
+                                            </TextBox>
+                                            <Button Grid.Column="1" AutomationProperties.AutomationId="AddExcludedSiteButton" Content="Add"
+                                                    Style="{StaticResource SmallButton}" Command="{Binding AddSiteCommand}" Margin="6,0,0,0" />
+                                        </Grid>
+                                        <TextBlock AutomationProperties.AutomationId="ExcludedSiteError" Text="{Binding SiteError}"
+                                                   Foreground="{StaticResource ErrBrush}" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                                                   Visibility="{Binding SiteError, Converter={StaticResource StringToVisibility}}" />
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Foreground="{StaticResource TextDimBrush}" TextWrapping="Wrap" Margin="2,4,0,0"
+                                           Text="Changes apply after Save Settings. The extension shows these settings read-only." />
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="0,24,0,24">

@@ -37,6 +37,9 @@ public sealed class JsonAppStore : IAppStore
                 state.Settings ??= new Models.AppSettings();
                 state.Downloads ??= new List<Models.DownloadItem>();
                 state.Updates ??= new UpdateState();
+                state.BrowserConnections ??= new List<Browser.BrowserConnection>();
+                state.Settings.BrowserIntegration ??= new Models.BrowserIntegrationSettings();
+                Browser.BrowserHandoffPolicy.Normalize(state.Settings.BrowserIntegration);
                 DestinationResolver.Normalize(state.Settings);
                 return state;
             }

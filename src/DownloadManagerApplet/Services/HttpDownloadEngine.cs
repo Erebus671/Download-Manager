@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using DownloadManagerApplet.Models;
+using DownloadManagerApplet.Services.Browser;
 
 namespace DownloadManagerApplet.Services;
 
@@ -25,15 +26,20 @@ public sealed class HttpDownloadEngine : IDownloadEngine
 
     public async Task DownloadAsync(DownloadItem item, IProgress<DownloadProgress> progress, CancellationToken cancellationToken)
     {
+        // Browser downloads get their own client so their cookies never reach other downloads.
+        var context = item.BrowserContext;
+        using var browserClient = context?.CreateClient();
+        var client = browserClient ?? _httpClient;
+
         var resumeOffset = File.Exists(item.PartFilePath) ? new FileInfo(item.PartFilePath).Length : 0L;
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, item.Url);
+        using var request = NewRequest(item, context);
         if (resumeOffset > 0)
         {
             request.Headers.Range = new RangeHeaderValue(resumeOffset, null);
         }
 
-        using var response = await _httpClient
+        using var response = await client
             .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
 
@@ -42,7 +48,7 @@ public sealed class HttpDownloadEngine : IDownloadEngine
             _log.Warn($"{item.FileName}: server rejected resume range at offset {resumeOffset}; restarting from scratch");
             File.Delete(item.PartFilePath);
             resumeOffset = 0;
-            await DownloadFromScratchAsync(item, progress, cancellationToken).ConfigureAwait(false);
+            await DownloadFromScratchAsync(client, item, context, progress, cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -77,10 +83,22 @@ public sealed class HttpDownloadEngine : IDownloadEngine
         Finalize(item);
     }
 
-    private async Task DownloadFromScratchAsync(DownloadItem item, IProgress<DownloadProgress> progress, CancellationToken cancellationToken)
+    private static HttpRequestMessage NewRequest(DownloadItem item, BrowserRequestContext? context)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, item.Url);
-        using var response = await _httpClient
+        var request = new HttpRequestMessage(HttpMethod.Get, item.Url);
+        context?.Apply(request);
+        return request;
+    }
+
+    private async Task DownloadFromScratchAsync(
+        HttpClient client,
+        DownloadItem item,
+        BrowserRequestContext? context,
+        IProgress<DownloadProgress> progress,
+        CancellationToken cancellationToken)
+    {
+        using var request = NewRequest(item, context);
+        using var response = await client
             .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
@@ -172,6 +190,7 @@ public sealed class HttpDownloadEngine : IDownloadEngine
 
             File.Move(item.PartFilePath, item.FullPath);
             item.PartFileName = null;
+            item.BrowserContext = null;
             item.Status = DownloadStatus.Completed;
             item.CompletedAt = DateTimeOffset.Now;
         }

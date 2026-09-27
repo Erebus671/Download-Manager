@@ -25,7 +25,7 @@ Plans can change. Items are listed in the order they're expected to ship.
 
 ### Next: v1.3.0 "The Assimilation Update"
 
-- [ ] **Browser integration (opt-in)**: extensions for Chrome, Edge, and Firefox hand downloads over 10 MB to the app. Per-site exclusion list; browser cookies used only for the matching authenticated download.
+- [x] **Browser integration (opt-in)**: extensions for Chrome, Edge, and Firefox (Brave, Opera, and Vivaldi use the Chrome extension) hand downloads over 10 MB to the app, starting it if it's closed. Per-site exclusion list; browser cookies used only for the matching authenticated download. Settings live in the app.
 - [x] **Formatted release notes**: the update prompt shows headings, bold text, code, and bullets instead of raw Markdown.
 - [ ] **Installer cleanup**: resolve the remaining harmless build warnings.
 

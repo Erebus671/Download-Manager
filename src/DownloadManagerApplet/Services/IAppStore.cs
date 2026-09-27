@@ -1,4 +1,5 @@
 using DownloadManagerApplet.Models;
+using DownloadManagerApplet.Services.Browser;
 
 namespace DownloadManagerApplet.Services;
 
@@ -7,6 +8,7 @@ public sealed class AppState
     public AppSettings Settings { get; set; } = new();
     public List<DownloadItem> Downloads { get; set; } = new();
     public UpdateState Updates { get; set; } = new();
+    public List<BrowserConnection> BrowserConnections { get; set; } = new();
 }
 
 public sealed class UpdateState

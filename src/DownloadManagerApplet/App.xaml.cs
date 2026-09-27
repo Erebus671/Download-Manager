@@ -4,7 +4,9 @@ using System.Net.Http.Headers;
 using System.Windows;
 using System.Windows.Threading;
 using DownloadManagerApplet.Services;
+using DownloadManagerApplet.Services.Browser;
 using DownloadManagerApplet.Services.Updates;
+using Microsoft.Win32;
 using DownloadManagerApplet.ViewModels;
 
 namespace DownloadManagerApplet;
@@ -43,6 +45,7 @@ public partial class App : Application
         }
 
         var afterUpdate = AfterUpdateInfo.Extract(args);
+        var startInBackground = args.Remove(InstanceNames.BackgroundFlag);
 
         var store = new JsonAppStore(Path.Combine(appDataFolder, "state.json"), NullLoggingService.Instance);
         var state = store.Load();
@@ -77,15 +80,22 @@ public partial class App : Application
         var mainViewModel = new MainViewModel(state, appStore, orchestrator, _log, updates, planner);
         updates.InstallHandler = update => InstallUpdateAsync(update, mainViewModel, updatesFolder, logFolder);
         _updates = updates;
+        var browserService = CreateBrowserIntegration(state, appStore, mainViewModel, appDataFolder);
 
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 
         _mainViewModel = mainViewModel;
         _mainWindow = new MainWindow(AppIcon.TryLoadSmall(_log)) { DataContext = mainViewModel };
+        if (startInBackground)
+        {
+            _mainWindow.ShowActivated = false;
+            _mainWindow.WindowState = WindowState.Minimized;
+        }
+
         _mainWindow.Show();
 
-        _instanceServer = new InstancePipeServer(InstanceNames.PipeName, HandleInstanceMessageAsync, _log);
+        _instanceServer = new InstancePipeServer(InstanceNames.PipeName, HandleInstanceMessageAsync, _log, browserHandler: browserService.HandleAsync);
         _instanceServer.Start();
 
         if (launchUrls.Count > 0)
@@ -126,6 +136,45 @@ public partial class App : Application
         }
 
         return updates;
+    }
+
+    private BrowserIntegrationService CreateBrowserIntegration(AppState state, IAppStore appStore, MainViewModel mainViewModel, string appDataFolder)
+    {
+        var log = _log!;
+        var registration = new NativeHostRegistration(
+            Registry.CurrentUser,
+            Path.Combine(appDataFolder, "NativeMessaging"),
+            Path.Combine(AppContext.BaseDirectory, NativeHostRegistration.HostExeName),
+            log);
+
+        // Re-register each start so an update or moved install self-heals.
+        if (state.Settings.BrowserIntegration.Enabled)
+        {
+            registration.Register();
+        }
+
+        var browserVm = new BrowserIntegrationViewModel(state, registration, log);
+        mainViewModel.BrowserIntegration = browserVm;
+
+        var service = new BrowserIntegrationService(
+            state,
+            (action, ct) => Dispatcher.InvokeAsync(action, DispatcherPriority.Normal, ct).Task,
+            () => appStore.Save(state),
+            mainViewModel.AddBrowserDownload,
+            openSettings =>
+            {
+                _mainWindow?.BringToFront();
+                if (openSettings)
+                {
+                    _mainWindow?.ShowBrowserSettings();
+                }
+            },
+            new HttpHandoffProbe(),
+            log,
+            UpdateSignatureFormat.NormalizeVersion(CurrentVersion));
+        service.ConnectionsChanged += browserVm.RefreshConnections;
+        service.SettingsChanged += browserVm.RefreshFromSettings;
+        return service;
     }
 
     private async Task<bool> InstallUpdateAsync(VerifiedUpdate update, MainViewModel mainViewModel, string updatesFolder, string logFolder)
