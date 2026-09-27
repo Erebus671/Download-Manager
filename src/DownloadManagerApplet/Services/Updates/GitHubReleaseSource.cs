@@ -22,7 +22,8 @@ public interface IReleaseSource
 public sealed class GitHubReleaseSource : IReleaseSource
 {
     public const string InstallerAssetName = "AtraTechDownloadSolutions.exe";
-    public const string SignatureAssetName = InstallerAssetName + ".sig";
+    // Renamed with each signing-key rotation so older builds skip releases they can't verify instead of failing the check.
+    public const string SignatureAssetName = InstallerAssetName + ".v2.sig";
 
     private const int MaxResponseBytes = 2 * 1024 * 1024;
     private const int MaxNotesChars = 4000;
@@ -135,7 +136,7 @@ public sealed class GitHubReleaseSource : IReleaseSource
 
             if (installer is null || signature is null)
             {
-                log.Debug($"Update check: release {tag} lacks {InstallerAssetName} or its .sig; skipping");
+                log.Debug($"Update check: release {tag} lacks {InstallerAssetName} or {SignatureAssetName}; skipping");
                 continue;
             }
 

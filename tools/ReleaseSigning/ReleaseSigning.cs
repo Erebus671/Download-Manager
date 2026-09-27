@@ -11,6 +11,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 const int MinPasswordLength = 16;
+// Must match GitHubReleaseSource.SignatureAssetName; renamed with each key rotation.
+const string SigSuffix = ".v2.sig";
 
 try
 {
@@ -39,7 +41,7 @@ static int Usage()
         Usage:
           keygen --out <key.pfx>
           sign   --key <key.pfx> --file <installer.exe> --version <x.y.z> [--password-stdin] [--force]
-          verify --public-key <base64 or .pub.txt> --file <installer.exe> --version <x.y.z> [--sig <file.sig>]
+          verify --public-key <base64 or .pub.txt> --file <installer.exe> --version <x.y.z> [--sig <file.v2.sig>]
         """);
     return 2;
 }
@@ -89,7 +91,7 @@ static int Sign(Options o)
 
     var filePath = Path.GetFullPath(o.Required("--file"));
     var version = ParseVersion(o.Required("--version"));
-    var sigPath = filePath + ".sig";
+    var sigPath = filePath + SigSuffix;
     if (File.Exists(sigPath) && !o.Flag("--force"))
     {
         throw new UsageException($"{sigPath} already exists; pass --force to replace it");
@@ -132,7 +134,7 @@ static int Verify(Options o)
 {
     var filePath = Path.GetFullPath(o.Required("--file"));
     var version = ParseVersion(o.Required("--version"));
-    var sigPath = o.Optional("--sig") ?? filePath + ".sig";
+    var sigPath = o.Optional("--sig") ?? filePath + SigSuffix;
 
     var keyArg = o.Required("--public-key");
     var publicKey = File.Exists(keyArg)

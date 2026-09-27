@@ -45,6 +45,14 @@ public class GitHubReleaseSourceTests : TestBase
     }
 
     [Fact]
+    public void Parse_SkipsReleaseWithOnlyRetiredSignatureName()
+    {
+        var assets = $"[{Asset(GitHubReleaseSource.InstallerAssetName, "1.2.0")},{Asset(GitHubReleaseSource.InstallerAssetName + ".sig", "1.2.0")}]";
+
+        Assert.Null(GitHubReleaseSource.Parse(Releases(Release("v1.2.0", assets: assets)), false, NullLoggingService.Instance));
+    }
+
+    [Fact]
     public void Parse_ReturnsNullForEmptyList()
     {
         Assert.Null(GitHubReleaseSource.Parse(Encoding.UTF8.GetBytes("[]"), false, NullLoggingService.Instance));
