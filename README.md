@@ -12,7 +12,8 @@ A Windows download manager with a queue, pause/resume, automatic retries, and do
 - **Sorted by file type**: videos, pictures, music, and documents go to your Windows **Videos**, **Pictures**, **Music**, and **Documents** folders; everything else goes to **Downloads**. Folders and file types are editable, and sorting can be turned off.
 - **Custom destination rules**: send matching downloads to a folder of your choice. Match on extension, file name, site, size, or file type. Folder paths can use `{site}`, `{date}`, `{category}`, and environment variables such as `%USERPROFILE%`.
 - **Real file names**: downloads use the name the server provides, and **Rename** changes it, even mid-download. Existing files are never overwritten; the new file gets a number instead, e.g. `report (1).pdf`.
-- **Signed automatic updates**: the app checks GitHub Releases, downloads updates in the background, and asks before installing. Every installer is verified against the AtraTech release signature first. Active downloads pause for the update and resume on their own afterward.
+- **Signed automatic updates**: the app checks GitHub Releases, downloads updates in the background, and asks before installing, with formatted release notes. Every installer is verified against the AtraTech release signature first. Active downloads pause for the update and resume on their own afterward.
+- **Browser integration (opt-in)**: extensions for Chrome, Edge, and Firefox (Brave, Opera, and Vivaldi use the Chrome extension) hand downloads over 10 MB to the app, starting it if it's closed. Several downloads handed over at once are accepted in parallel. Per-site exclusion list; browser cookies are used only for the matching signed-in download and never saved to disk.
 - **Survives restarts**: if you close the app mid-download, it asks you on the next launch whether to resume.
 - **Single instance**: opening the app again, or launching it with a URL, hands off to the window that's already running.
 - **History**: completed, canceled, and failed downloads move to the History tab. You can retry them from there.
@@ -23,12 +24,8 @@ A Windows download manager with a queue, pause/resume, automatic retries, and do
 
 Plans can change. Items are listed in the order they're expected to ship.
 
-### Next: v1.3.0 "The Assimilation Update"
+### Next: v1.3.1
 
-- [x] **Browser integration (opt-in)**: extensions for Chrome, Edge, and Firefox (Brave, Opera, and Vivaldi use the Chrome extension) hand downloads over 10 MB to the app, starting it if it's closed. Per-site exclusion list; browser cookies used only for the matching authenticated download. Settings live in the app.
-- [x] **Formatted release notes**: the update prompt shows headings, bold text, code, and bullets instead of raw Markdown.
-- [x] **Installer cleanup**: resolve the remaining harmless build warnings.
-- [x] **Browser handoff fixes**: several downloads handed over at once are accepted in parallel; the server's file name is used from the start.
 - [ ] **Signed-in resume after restart**: resuming a signed-in download after the app restarts gets fresh sign-in cookies from the browser; nothing is saved to disk.
 
 ### Later
@@ -41,6 +38,7 @@ Plans can change. Items are listed in the order they're expected to ship.
 
 ### Shipped
 
+- [x] **v1.3.0 "The Assimilation Update"**: opt-in browser integration (Chrome, Edge, Firefox), parallel browser handoffs, formatted release notes, installer cleanup, new update signing key (install 1.3.0 by hand once).
 - [x] **v1.2.0 "The Obsessive Compulsive Update"**: category folders, custom destination rules, **Save to** list, server file names, **Rename**, **Save Settings** confirmation.
 - [x] **v1.1.0**: signed automatic updates, auto-resume after an update, single instance with URL handoff.
 - [x] **v1.0.0**: queue, pause/resume, retries, history, resume prompt, log panel, dark theme, installer.
